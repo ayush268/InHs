@@ -2,17 +2,24 @@
 
 module Types
   (Statement(..),
+   Value(..),
    Identifier,
    Literal,
-   EnvironmentMap) where
+   EnvironmentMap,
+   MemoryToEqClassMap,
+   EqClassToValueMap) where
 
 import qualified Data.Map as Map
+import qualified Data.UUID as UUID
 
 -- Type Synonyms
 type Identifier = String
 type Literal = Int
 
-type EnvironmentMap = Map.Map String String
+type EnvironmentMap = Map.Map String UUID.UUID
+
+type MemoryToEqClassMap = Map.Map UUID.UUID UUID.UUID
+type EqClassToValueMap  = Map.Map UUID.UUID Value
 
 -- New Types
 data Statement = Skip
@@ -33,5 +40,12 @@ data Statement = Skip
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]} deriving (Show)
+
+data Value = Lit Literal
+             | Closure {procParameters :: [Identifier],
+                        procStmt       :: Statement,
+                        procEnv        :: EnvironmentMap}
+             | Rec {recLabel  :: Literal,
+                    recValues :: [(Literal, Identifier)]}
 
 -- instance Read Statement where
