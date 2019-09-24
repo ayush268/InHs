@@ -3,11 +3,18 @@
 module Types
   (Statement(..),
    Identifier,
-   Literal) where
+   Literal,
+   EnvironmentMap) where
 
+import qualified Data.Map as Map
+
+-- Type Synonyms
 type Identifier = String
 type Literal = Int
 
+type EnvironmentMap = Map.Map String String
+
+-- New Types
 data Statement = Skip
                  | Multiple {stmts :: [Statement]}
                  | Var {ident :: Identifier,
