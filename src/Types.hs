@@ -1,6 +1,9 @@
 -- Module listing out types for the interpreter
 
---module types(Statement(..)) where
+module Types
+  (Statement(..),
+   Identifier,
+   Literal) where
 
 type Identifier = String
 type Literal = Int
