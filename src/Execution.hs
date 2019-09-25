@@ -38,6 +38,13 @@ executeStack sas memory = foldl foldingFunction (True, sas, memory, [])
                                   where x = Maybe.fromJust (Map.lookup dest env)
                                         y = Maybe.fromJust (Map.lookup src env)
 
+-- BindValue Statements
+        foldingFunction (result, sas, memory, envList) ((Types.BindValue dest value), env) = (result, executionSas, memory, envList ++ [env])
+          where executionSas = if (Maybe.isNothing (Map.lookup dest env))
+                                then error $ "Bind Value Statement Error: Var " ++ dest ++ " not in scope."
+                                else SAS.bindValue sas x value env
+                                  where x = Maybe.fromJust (Map.lookup dest env)
+
 -- Error Case
         foldingFunction (result, sas, memory, envList) _ = (False, sas, memory, envList)
 

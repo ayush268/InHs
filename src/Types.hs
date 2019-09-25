@@ -2,6 +2,7 @@
 
 module Types
   (Statement(..),
+   ValuesRead(..),
    Value(..),
    Identifier,
    Literal,
@@ -20,7 +21,7 @@ type Identifier = String
 type Literal = Int
 type Memory = Int
 
-type EnvironmentMap = Map.Map String Memory
+type EnvironmentMap = Map.Map Identifier Memory
 
 type MemoryToEqClassMap = Map.Map Memory Memory
 type EqClassToValueMap  = Map.Map Memory Value
@@ -29,6 +30,7 @@ type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
 
 type MemoryList = [Memory]
 
+type ReadFeatureMap = Map.Map Literal Identifier
 type FeatureMap = Map.Map Literal Memory
 
 -- New Types
@@ -39,7 +41,7 @@ data Statement = Skip
                  | BindIdent {dest :: Identifier,
                               src  :: Identifier}
                  | BindValue {dest  :: Identifier,
-                              value :: Value}
+                              value :: ValuesRead}
                  | Conditional {src     :: Identifier,
                                 fststmt :: Statement,
                                 sndstmt :: Statement}
@@ -50,7 +52,13 @@ data Statement = Skip
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]} deriving (Eq, Show)
 
-data Value = Lit Literal
+data ValuesRead = Lit {val :: Literal}
+                  | Proc {params :: [Identifier],
+                          pStmt   :: Statement}
+                  | Record {label  :: Literal,
+                            values :: ReadFeatureMap} deriving (Eq, Show)
+
+data Value = Liter {litVal :: Literal}
              | Closure {procParameters :: [Identifier],
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
