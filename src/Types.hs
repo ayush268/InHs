@@ -29,6 +29,8 @@ type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
 
 type MemoryList = [Memory]
 
+type FeatureMap = Map.Map Literal Memory
+
 -- New Types
 data Statement = Skip
                  | Multiple {stmts :: [Statement]}
@@ -42,17 +44,18 @@ data Statement = Skip
                                 fststmt :: Statement,
                                 sndstmt :: Statement}
                  | Match {src     :: Identifier,
+                          pattern :: Value,
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
-                          parameters :: [Identifier]} deriving (Show)
+                          parameters :: [Identifier]} deriving (Eq, Show)
 
 data Value = Lit Literal
              | Closure {procParameters :: [Identifier],
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: [(Literal, Identifier)]} deriving (Show)
+                    recValues :: FeatureMap} deriving (Eq, Show)
 
 -- instance Read Statement where
 -- instance (Read a) => Read (Statement a) where

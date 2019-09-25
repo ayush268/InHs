@@ -2,11 +2,11 @@
 -- for the Interpreter
 
 module SingleAssignmentStore
-  (addVariable) where
+  (addVariable,
+   unifyVariables) where
 
 import qualified Data.Map as Map
-import qualified Data.UUID as UUID
-import qualified System.Random as Rand
+import qualified Data.Maybe as Maybe
 
 import qualified Types
 import qualified Helpers
@@ -18,3 +18,30 @@ addVariable sas memory = (((Map.insert var eqClass eqMap), (valueMap)), updatedM
         var               = head memory
         eqClass           = head $ tail memory
         updatedMemoryList = drop 2 memory
+
+unifyVariables :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
+unifyVariables sas x y
+  | (Maybe.isNothing (Map.lookup x eqMap)) || (Maybe.isNothing (Map.lookup y eqMap)) = error "Unification Failed: Variable not SAS"
+  | otherwise = unify eqMap valueMap x y
+  where valueMap = snd sas
+        eqMap    = fst sas
+
+unify :: Types.MemoryToEqClassMap -> Types.EqClassToValueMap -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
+unify eqMap valueMap x y
+  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap)) = ((Map.insert y eqX eqMap), valueMap)
+  | (Maybe.isJust (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap))    = ((Map.insert y eqX eqMap), valueMap)
+  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isJust (Map.lookup eqY valueMap))    = ((Map.insert x eqY eqMap), valueMap)
+  | otherwise = unifyBounded eqMap valueMap x y
+  where eqX = Maybe.fromJust (Map.lookup x eqMap)
+        eqY = Maybe.fromJust (Map.lookup y eqMap)
+
+unifyBounded :: Types.MemoryToEqClassMap -> Types.EqClassToValueMap -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
+unifyBounded eqMap valueMap x y
+  | (Helpers.isLit valX) && (Helpers.isLit valY) && (valX == valY) = ((Map.insert y eqX eqMap), valueMap)
+  -- TODO (recursive unification for records)
+  | (Helpers.isRec valX) && (Helpers.isRec valY) && (Helpers.matchRecords valX valY) = (eqMap, valueMap)
+  | otherwise = error "Unification Failed: Variables bound to incompatible types cannot be unified!"
+  where eqX  = Maybe.fromJust (Map.lookup x eqMap)
+        eqY  = Maybe.fromJust (Map.lookup y eqMap)
+        valX = Maybe.fromJust (Map.lookup eqX valueMap)
+        valY = Maybe.fromJust (Map.lookup eqY valueMap)

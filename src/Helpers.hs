@@ -1,13 +1,26 @@
 -- Module for helper functions
 
 module Helpers
-  (getRandomUUID) where
+  (isLit,
+   isRec,
+   matchRecords) where
 
-import qualified Data.UUID as UUID
-import qualified System.Random as Rand
+import qualified Data.Map as Map
 
--- getRandomUUID :: UUID.UUID
+import qualified Types
 
-getRandomUUID = do
-  uuid <- Rand.randomIO :: IO UUID.UUID
-  print uuid
+isLit :: Types.Value -> Bool
+isLit (Types.Lit x) = True
+isLit _ = False
+
+isRec :: Types.Value -> Bool
+isRec (Types.Rec x y) = True
+isRec _ = False
+
+matchRecords :: Types.Value -> Types.Value -> Bool
+matchRecords (Types.Rec a b) (Types.Rec c d) = labelMatch && arityMatch && featuresMatch
+  where labelMatch = (a == c)
+        arityMatch = ((length b) == (length d))
+        featuresMatch = ((length $ Map.union b d) == (length $ Map.intersection b d))
+
+matchRecords _ _ = False
