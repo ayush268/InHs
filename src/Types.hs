@@ -5,9 +5,12 @@ module Types
    Value(..),
    Identifier,
    Literal,
+   Memory,
    EnvironmentMap,
    MemoryToEqClassMap,
-   EqClassToValueMap) where
+   EqClassToValueMap,
+   SingleAssignmentStore,
+   MemoryList) where
 
 import qualified Data.Map as Map
 import qualified Data.UUID as UUID
@@ -15,27 +18,30 @@ import qualified Data.UUID as UUID
 -- Type Synonyms
 type Identifier = String
 type Literal = Int
+type Memory = Int
 
-type EnvironmentMap = Map.Map String UUID.UUID
+type EnvironmentMap = Map.Map String Memory
 
-type MemoryToEqClassMap = Map.Map UUID.UUID UUID.UUID
-type EqClassToValueMap  = Map.Map UUID.UUID Value
+type MemoryToEqClassMap = Map.Map Memory Memory
+type EqClassToValueMap  = Map.Map Memory Value
+
+type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
+
+type MemoryList = [Memory]
 
 -- New Types
 data Statement = Skip
                  | Multiple {stmts :: [Statement]}
-                 | Var {ident :: Identifier,
-                        stmt  :: Statement}
-                 | Bind {ident   :: Identifier,
-                         literal :: Literal}
-                 | Record {label :: Literal,
-                           pairs :: [(Literal, Identifier)]}
-                 | Proc {parameters :: [Identifier],
-                         stmt       :: Statement}
-                 | Conditional {ident   :: Identifier,
+                 | Var {dest :: Identifier,
+                        stmt :: Statement}
+                 | BindIdent {dest :: Identifier,
+                              src  :: Identifier}
+                 | BindValue {dest  :: Identifier,
+                              value :: Value}
+                 | Conditional {src     :: Identifier,
                                 fststmt :: Statement,
                                 sndstmt :: Statement}
-                 | Match {ident   :: Identifier,
+                 | Match {src     :: Identifier,
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
@@ -46,6 +52,7 @@ data Value = Lit Literal
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: [(Literal, Identifier)]}
+                    recValues :: [(Literal, Identifier)]} deriving (Show)
 
 -- instance Read Statement where
+-- instance (Read a) => Read (Statement a) where
