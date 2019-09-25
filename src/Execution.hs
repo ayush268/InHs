@@ -1,7 +1,7 @@
 -- Module for the Semantic Stack object and its methods
 
---module Execution
---  (executeProgram) where
+module Execution
+  (executeProgram) where
 
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
