@@ -23,10 +23,10 @@ addVariable sas memory = (((Map.insert var eqClass eqMap), (valueMap)), updatedM
 unifyVariables :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
 unifyVariables (eqMap, valueMap) x y
   | (Maybe.isNothing (Map.lookup x eqMap)) || (Maybe.isNothing (Map.lookup y eqMap)) = error "Unification Failed: Variable not in SAS"
-  | otherwise = unify eqMap valueMap x y
+  | otherwise = unify (eqMap, valueMap) x y
 
-unify :: Types.MemoryToEqClassMap -> Types.EqClassToValueMap -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
-unify eqMap valueMap x y
+unify :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
+unify (eqMap, valueMap) x y
   | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap)) = ((Map.insert y eqX eqMap), valueMap)
   | (Maybe.isJust (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap))    = ((Map.insert y eqX eqMap), valueMap)
   | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isJust (Map.lookup eqY valueMap))    = ((Map.insert x eqY eqMap), valueMap)
@@ -36,12 +36,22 @@ unify eqMap valueMap x y
 
 unifyBounded :: Types.MemoryToEqClassMap -> Types.EqClassToValueMap -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
 unifyBounded eqMap valueMap x y
+  | (Helpers.isRec valX) && (Helpers.isRec valY) && (valX == valY) = unifyRecords (eqMap, valueMap) x y
   | (valX == valY) = ((Map.insert y eqX eqMap), valueMap)
-  | otherwise = error "Unification Failed: Variables bound to incompatible types cannot be unified!"
+  | otherwise = error "Unification Failed: Variables bound to incompatible types or different values cannot be unified!"
   where eqX  = Maybe.fromJust (Map.lookup x eqMap)
         eqY  = Maybe.fromJust (Map.lookup y eqMap)
         valX = Maybe.fromJust (Map.lookup eqX valueMap)
         valY = Maybe.fromJust (Map.lookup eqY valueMap)
+
+unifyRecords :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
+unifyRecords (eqMap, valueMap) x y = ((Map.insert y eqX updatedEqMap), updatedValueMap)
+  where eqX = Maybe.fromJust (Map.lookup x eqMap)
+        eqY  = Maybe.fromJust (Map.lookup y eqMap)
+        valX = Maybe.fromJust (Map.lookup eqX valueMap)
+        valY = Maybe.fromJust (Map.lookup eqY valueMap)
+        (updatedEqMap, updatedValueMap) = foldl (\sas (x, y) -> unify sas x y) (eqMap, valueMap) featureValueMapping
+        featureValueMapping = zip (Map.elems $ Types.recValues valX) (Map.elems $ Types.recValues valY)
 
 bindValue :: Types.SingleAssignmentStore -> Types.Memory -> Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore
 bindValue (eqMap, valueMap) x value env
@@ -52,7 +62,15 @@ bindValue (eqMap, valueMap) x value env
 
 unifyValue :: Types.SingleAssignmentStore -> Types.Memory -> Types.Value -> Types.SingleAssignmentStore
 unifyValue (eqMap, valueMap) x value
+  | (Helpers.isRec valX) && (Helpers.isRec value) && (value == valX) = unifyRecordsValues (eqMap, valueMap) x value
   | (value == valX) = (eqMap, valueMap)
   | otherwise = error "Unification Failed: Variable already bound to a different value!"
   where eqX  = Maybe.fromJust (Map.lookup x eqMap)
         valX = Maybe.fromJust (Map.lookup eqX valueMap)
+
+unifyRecordsValues :: Types.SingleAssignmentStore -> Types.Memory -> Types.Value -> Types.SingleAssignmentStore
+unifyRecordsValues (eqMap, valueMap) x value = (updatedEqMap, updatedValueMap)
+  where eqX = Maybe.fromJust (Map.lookup x eqMap)
+        valX = Maybe.fromJust (Map.lookup eqX valueMap)
+        (updatedEqMap, updatedValueMap) = foldl (\sas (x, y) -> unify sas x y) (eqMap, valueMap) featureValueMapping
+        featureValueMapping = zip (Map.elems $ Types.recValues valX) (Map.elems $ Types.recValues value)

@@ -1,9 +1,7 @@
 -- Module for helper functions
 
 module Helpers
-  (isLit,
-   isRec,
-   matchRecords,
+  (isRec,
    convertValuesReadToValue) where
 
 import qualified Data.Map as Map
@@ -12,21 +10,9 @@ import qualified Data.Maybe as Maybe
 
 import qualified Types
 
-isLit :: Types.Value -> Bool
-isLit (Types.Liter x) = True
-isLit _ = False
-
 isRec :: Types.Value -> Bool
 isRec (Types.Rec x y) = True
 isRec _ = False
-
-matchRecords :: Types.Value -> Types.Value -> Bool
-matchRecords (Types.Rec a b) (Types.Rec c d) = labelMatch && arityMatch && featuresMatch
-  where labelMatch = (a == c)
-        arityMatch = ((length b) == (length d))
-        featuresMatch = ((length $ Map.union b d) == (length $ Map.intersection b d))
-
-matchRecords _ _ = False
 
 convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.Value
 convertValuesReadToValue (Types.Lit x) _ = Types.Liter x

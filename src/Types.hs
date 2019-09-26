@@ -63,7 +63,22 @@ data Value = Liter {litVal :: Literal}
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: FeatureMap} deriving (Eq, Show)
+                    recValues :: FeatureMap} deriving (Show)
+
+-- Making instance of a typeclass
+
+matchRecords :: Value -> Value -> Bool
+matchRecords (Rec a b) (Rec c d) = labelMatch && arityMatch && featuresMatch
+  where labelMatch = (a == c)
+        arityMatch = ((length b) == (length d))
+        featuresMatch = ((length $ Map.union b d) == (length $ Map.intersection b d))
+
+matchRecords _ _ = False
+
+instance Eq Value where
+  (Liter x) == (Liter y) = x == y
+  (Rec a b) == (Rec c d) = (matchRecords (Rec a b) (Rec c d))
+  _ == _ = False
 
 -- instance Read Statement where
 -- instance (Read a) => Read (Statement a) where
