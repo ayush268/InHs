@@ -94,28 +94,99 @@ main = do
     let p26 = Types.BindValue s2 $ Types.Proc ["a", "b"] Types.Skip
     let p27 = Types.Var s2 p26
 
+    let (x, _, y) = Ex.executeProgram p5
+    print p5
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------" 
+
     putStrLn "\n"
-    let (x, _, _) = Ex.executeProgram p5
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p8
+    print p8
+    print y
     print x
-    let (x, _, _) = Ex.executeProgram p8
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    -- Failure Case
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p11
+    print p11
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    -- Failure Case
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p14
+    print p14
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p20
+    print p20
+    print y
     print x
-    let (_, _, _) = Ex.executeProgram p11
-    let (_, _, _) = Ex.executeProgram p14
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p29
+    print p29
+    print y
     print x
-    let (x, _, _) = Ex.executeProgram p20
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p27
+    print p27
+    print y
     print x
-    let (x, _, _) = Ex.executeProgram p29
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p33
+    print p33
+    print y
     print x
-    let (x, _, _) = Ex.executeProgram p27
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p37
+    print p37
+    print y
     print x
-    let (x, _, _) = Ex.executeProgram p33
-    print x
-    let (x, _, _) = Ex.executeProgram p37
-    print x
-    let (_, _, _) = Ex.executeProgram p44
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    -- Failure Case
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p44
+    print p44
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
     let (x, _, y) = Ex.executeProgram p53
     print p53
-    print x
     print y
-    let (x, _, _) = Ex.executeProgram p58
     print x
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n"
+    putStrLn "\n"
+    let (x, _, y) = Ex.executeProgram p58
+    print p58
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------" 

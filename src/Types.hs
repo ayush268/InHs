@@ -50,20 +50,20 @@ data Statement = Skip
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
-                          parameters :: [Identifier]} deriving (Eq, Show)
+                          parameters :: [Identifier]} deriving (Eq, Show, Read)
 
 data ValuesRead = Lit {val :: Literal}
                   | Proc {params :: [Identifier],
                           pStmt   :: Statement}
                   | Record {label  :: Literal,
-                            values :: ReadFeatureMap} deriving (Eq, Show)
+                            values :: ReadFeatureMap} deriving (Eq, Show, Read)
 
 data Value = Liter {litVal :: Literal}
              | Closure {procParameters :: [Identifier],
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: FeatureMap} deriving (Show)
+                    recValues :: FeatureMap} deriving (Show, Read)
 
 -- Making instance of a typeclass
 
@@ -79,6 +79,3 @@ instance Eq Value where
   (Liter x) == (Liter y) = x == y
   (Rec a b) == (Rec c d) = (matchRecords (Rec a b) (Rec c d))
   _ == _ = False
-
--- instance Read Statement where
--- instance (Read a) => Read (Statement a) where
