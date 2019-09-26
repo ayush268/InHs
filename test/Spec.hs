@@ -14,11 +14,26 @@ main = do
     let s1 = "alice"
     let s2 = "bob"
     let s3 = "charles"
+    let s4 = "doug"
+    let s5 = "eve"
+    let s6 = "frank"
 
-    -- Identifier binding succeeds
+    -- Identifier binding succeeds (both unbound)
     let p6 = Types.BindIdent s1 s2
     let p7 = Types.Var s1 p6
     let p8 = Types.Var s2 p7
+
+    -- Identifier binding succeeds (s1 -> bound; s2 -> unbound)
+    let p30 = Types.BindIdent s1 s2
+    let p31 = Types.Multiple [Types.BindValue s1 $ Types.Lit 5, p30]
+    let p32 = Types.Var s1 p31
+    let p33 = Types.Var s2 p32
+
+    -- Identifier binding succeeds (s1 -> unbound; s2 -> bound)
+    let p34 = Types.BindIdent s1 s2
+    let p35 = Types.Multiple [Types.BindValue s2 $ Types.Lit 5, p34]
+    let p36 = Types.Var s1 p35
+    let p37 = Types.Var s2 p36
 
     -- Identifier binding fails; Variable out of scope
     let p9 = Types.Var s1 Types.Skip
@@ -41,28 +56,66 @@ main = do
     let p19 = Types.Var s1 p18
     let p20 = Types.Var s2 p19
 
-    -- Bind record to a value
+    -- Bind record to a value succeeds
     let p24 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
     let p25 = Types.Var s1 p24
     let p28 = Types.Var s2 p25
     let p29 = Types.Var s3 p28
+
+    -- Binding two records fails (different arity)
+    let p38 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
+    let p39 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5)]
+    let p45 = Types.Multiple[p38, p39, Types.BindIdent s1 s4]
+    let p40 = Types.Var s1 p45
+    let p41 = Types.Var s2 p40
+    let p42 = Types.Var s3 p41
+    let p43 = Types.Var s4 p42
+    let p44 = Types.Var s5 p43
+
+    -- Binding two records succeeds (same arity)
+    let p45 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
+    let p46 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5), (2, s6)]
+    let p47 = Types.Multiple[p45, p46, Types.BindIdent s1 s4]
+    let p48 = Types.Var s1 p47
+    let p49 = Types.Var s2 p48
+    let p50 = Types.Var s3 p49
+    let p51 = Types.Var s4 p50
+    let p52 = Types.Var s5 p51
+    let p53 = Types.Var s6 p52
+
+    -- Collecting free variables from closures
+    let p54 = Types.BindIdent s1 s2
+    let p55 = Types.BindValue s3 $ Types.Proc [s2] p54
+    let p56 = Types.Var s1 p55
+    let p57 = Types.Var s2 p56
+    let p58 = Types.Var s3 p57
 
     -- Assign procedure value along with closure
     let p26 = Types.BindValue s2 $ Types.Proc ["a", "b"] Types.Skip
     let p27 = Types.Var s2 p26
 
     putStrLn "\n"
-    let (_, x, _, _) = Ex.executeProgram p5
+    let (x, _, _) = Ex.executeProgram p5
     print x
-    let (_, x, _, _) = Ex.executeProgram p8
+    let (x, _, _) = Ex.executeProgram p8
     print x
-    let (y, _, _, _) = Ex.executeProgram p11
+    let (_, _, _) = Ex.executeProgram p11
+    let (_, _, _) = Ex.executeProgram p14
+    print x
+    let (x, _, _) = Ex.executeProgram p20
+    print x
+    let (x, _, _) = Ex.executeProgram p29
+    print x
+    let (x, _, _) = Ex.executeProgram p27
+    print x
+    let (x, _, _) = Ex.executeProgram p33
+    print x
+    let (x, _, _) = Ex.executeProgram p37
+    print x
+    let (_, _, _) = Ex.executeProgram p44
+    let (x, _, y) = Ex.executeProgram p53
+    print p53
+    print x
     print y
-    let (y, _, _, _) = Ex.executeProgram p14
-    print x
-    let (_, x, _, _) = Ex.executeProgram p20
-    print x
-    let (_, x, _, _) = Ex.executeProgram p29
-    print x
-    let (_, x, _, _) = Ex.executeProgram p27
+    let (x, _, _) = Ex.executeProgram p58
     print x
