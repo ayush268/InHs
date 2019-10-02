@@ -46,7 +46,7 @@ data Statement = Skip
                                 fststmt :: Statement,
                                 sndstmt :: Statement}
                  | Match {src     :: Identifier,
-                          pattern :: Value,
+                          pattern :: ValuesRead,
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
