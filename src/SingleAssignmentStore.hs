@@ -27,9 +27,9 @@ unifyVariables (eqMap, valueMap) x y
 
 unify :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
 unify (eqMap, valueMap) x y
-  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap)) = ((Map.insert y eqX eqMap), valueMap)
-  | (Maybe.isJust (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap))    = ((Map.insert y eqX eqMap), valueMap)
-  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isJust (Map.lookup eqY valueMap))    = ((Map.insert x eqY eqMap), valueMap)
+  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap)) = (Helpers.updateOldEquivalenceClass eqY eqX eqMap, valueMap)
+  | (Maybe.isJust (Map.lookup eqX valueMap)) && (Maybe.isNothing (Map.lookup eqY valueMap))    = (Helpers.updateOldEquivalenceClass eqY eqX eqMap, valueMap)
+  | (Maybe.isNothing (Map.lookup eqX valueMap)) && (Maybe.isJust (Map.lookup eqY valueMap))    = (Helpers.updateOldEquivalenceClass eqX eqY eqMap, valueMap)
   | otherwise = unifyBounded eqMap valueMap x y
   where eqX = Maybe.fromJust (Map.lookup x eqMap)
         eqY = Maybe.fromJust (Map.lookup y eqMap)
@@ -37,7 +37,7 @@ unify (eqMap, valueMap) x y
 unifyBounded :: Types.MemoryToEqClassMap -> Types.EqClassToValueMap -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
 unifyBounded eqMap valueMap x y
   | (Helpers.isRec valX) && (Helpers.isRec valY) && (valX == valY) = unifyRecords (eqMap, valueMap) x y
-  | (valX == valY) = ((Map.insert y eqX eqMap), valueMap)
+  | (valX == valY) = (Helpers.updateOldEquivalenceClass eqY eqX eqMap, valueMap)
   | otherwise = error "Unification Failed: Variables bound to incompatible types or different values cannot be unified!"
   where eqX  = Maybe.fromJust (Map.lookup x eqMap)
         eqY  = Maybe.fromJust (Map.lookup y eqMap)
@@ -45,7 +45,7 @@ unifyBounded eqMap valueMap x y
         valY = Maybe.fromJust (Map.lookup eqY valueMap)
 
 unifyRecords :: Types.SingleAssignmentStore -> Types.Memory -> Types.Memory -> Types.SingleAssignmentStore
-unifyRecords (eqMap, valueMap) x y = ((Map.insert y eqX updatedEqMap), updatedValueMap)
+unifyRecords (eqMap, valueMap) x y = (Helpers.updateOldEquivalenceClass eqY eqX updatedEqMap, updatedValueMap)
   where eqX = Maybe.fromJust (Map.lookup x eqMap)
         eqY  = Maybe.fromJust (Map.lookup y eqMap)
         valX = Maybe.fromJust (Map.lookup eqX valueMap)

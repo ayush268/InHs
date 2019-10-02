@@ -9,6 +9,7 @@ module Helpers
    matchPattern,
    extendEnvFromPattern,
    extendEnvFromClosure,
+   updateOldEquivalenceClass,
    convertValuesReadToValue) where
 
 import qualified Data.Map as Map
@@ -67,6 +68,10 @@ extendEnvFromClosure (Types.Closure closureParams _ closureEnv) params env = Map
           where memoryOfParams = map (\x -> Maybe.fromJust $ Map.lookup x env) params
 
 extendEnvFromClosure _ _ env = env
+
+
+updateOldEquivalenceClass :: Types.Memory -> Types.Memory -> Types.MemoryToEqClassMap -> Types.MemoryToEqClassMap
+updateOldEquivalenceClass oldValue newValue eqMap = Map.map (\x -> if x == oldValue then newValue else x) eqMap
 
 
 convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.Value

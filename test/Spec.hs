@@ -193,3 +193,4 @@ main = do
 
 -- For future tests
 -- x = Types.Var "a" $ Types.Var "b" $ Types.Var "c" $ Var "x" $ Var "y" $ Multiple [(BindValue "x" $ Record 1 $ Map.fromList [(10, "a"), (12, "b")]), (Match "x" (Record 1 $ Map.fromList [(10, "m"),(12,"n")]) (BindIdent "y" "m") (BindIdent "y" "b"))]
+-- x = Types.Var "a" $ Types.Var "b" $ Types.Var "f" $ Multiple [(Var "c" $ Multiple [(BindValue "f" $ Proc ["x", "y"] (Multiple [(BindIdent "y" "x"), (BindIdent "y" "c")])), (BindValue "c" $ Lit 0)]), (Apply "f" ["a", "b"])]
