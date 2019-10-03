@@ -162,7 +162,7 @@ local A in
 	 local Y in
 	    X = 15(10:A, 12:B)
 	    case X
-	    of 15(10:m, 12:n) then Y=M
+	    of 15(10:m, 12:n) then Y=1
 	    else Y = B
 	    end
 	 end
