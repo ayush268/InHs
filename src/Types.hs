@@ -2,6 +2,8 @@
 
 module Types
   (Statement(..),
+   Expression(..),
+   Operator(..),
    ValuesRead(..),
    Value(..),
    Identifier,
@@ -52,7 +54,15 @@ data Statement = Skip
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]} deriving (Eq, Show, Read)
 
-data ValuesRead = Lit {val :: Literal}
+data Expression = Lit {val :: Literal}
+                  | Variable {expVar :: Identifier}
+                  | Exp {operator :: Operator,
+                         leftOperand :: Expression,
+                         rightOperand :: Expression} deriving (Eq, Show, Read)
+
+data Operator = Add | Sub | Mult deriving (Eq, Show, Read)
+
+data ValuesRead = Expr {expr :: Expression}
                   | Proc {params :: [Identifier],
                           pStmt   :: Statement}
                   | Record {label  :: Literal,

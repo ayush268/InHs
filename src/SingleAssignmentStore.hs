@@ -58,7 +58,7 @@ bindValue (eqMap, valueMap) x value env
   | Maybe.isNothing (Map.lookup eqX valueMap) = (eqMap, (Map.insert eqX newValue valueMap))
   | otherwise = unifyValue (eqMap, valueMap) x newValue
   where eqX = Maybe.fromJust (Map.lookup x eqMap)
-        newValue = Helpers.convertValuesReadToValue value env
+        newValue = Helpers.convertValuesReadToValue value env (eqMap, valueMap)
 
 unifyValue :: Types.SingleAssignmentStore -> Types.Memory -> Types.Value -> Types.SingleAssignmentStore
 unifyValue (eqMap, valueMap) x value

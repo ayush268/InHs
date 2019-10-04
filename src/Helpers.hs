@@ -42,6 +42,7 @@ getValue src env (eqMap, valueMap) = if (Maybe.isJust var) && (Maybe.isJust eqCl
         eqClass = Map.lookup (Maybe.fromJust var) eqMap
         val = Map.lookup (Maybe.fromJust eqClass) valueMap
 
+
 matchPattern :: Types.Value -> Types.ValuesRead -> Bool
 matchPattern (Types.Rec a b) (Types.Record c d) = labelMatch && arityMatch && featuresMatch
   where labelMatch = (a == c)
@@ -74,17 +75,41 @@ updateOldEquivalenceClass :: Types.Memory -> Types.Memory -> Types.MemoryToEqCla
 updateOldEquivalenceClass oldValue newValue eqMap = Map.map (\x -> if x == oldValue then newValue else x) eqMap
 
 
-convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.Value
-convertValuesReadToValue (Types.Lit x) _ = Types.Liter x
+convertExpressionToValue :: Types.Expression -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Value
+convertExpressionToValue (Types.Lit x) env sas = Types.Liter x
 
-convertValuesReadToValue (Types.Record l m) env = Types.Rec l valueMap
+convertExpressionToValue (Types.Variable x) env sas = if (isLit val)
+                                                        then val
+                                                        else error $ "Variable: " ++ x ++ " should be bound to a literal value in the expression."
+  where val = getValue x env sas
+
+convertExpressionToValue (Types.Exp op left right) env sas
+  | op == Types.Add  = Types.Liter $ leftValue + rightValue
+  | op == Types.Sub  = Types.Liter $ leftValue - rightValue
+  | op == Types.Mult = Types.Liter $ leftValue * rightValue
+  where leftValue  = Types.litVal $ convertExpressionToValue left env sas
+        rightValue = Types.litVal $ convertExpressionToValue right env sas
+
+
+convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Value
+convertValuesReadToValue (Types.Record l m) env _ = Types.Rec l valueMap
   where valueMap = Map.map getBindingVar m
           where getBindingVar x = Maybe.fromJust (Map.lookup x env)
 
-convertValuesReadToValue (Types.Proc p s) env = Types.Closure p s closureEnv
+convertValuesReadToValue (Types.Proc p s) env _ = Types.Closure p s closureEnv
   where closureEnv = Map.restrictKeys env freeVariables
           where freeVariables = Set.difference variablesInProc (Set.fromList p)
                   where variablesInProc = getVariablesInStatement s
+
+convertValuesReadToValue (Types.Expr exp) env sas = convertExpressionToValue exp env sas
+
+
+getVariablesInExpression :: Types.Expression -> Set.Set Types.Identifier
+getVariablesInExpression (Types.Lit _) = Set.empty
+getVariablesInExpression (Types.Variable x) = Set.singleton x
+getVariablesInExpression (Types.Exp _ left right) = Set.union expInLeft expInRight
+  where expInLeft  = getVariablesInExpression left
+        expInRight = getVariablesInExpression right
 
 getVariablesInStatement :: Types.Statement -> Set.Set Types.Identifier
 
@@ -96,6 +121,6 @@ getVariablesInStatement (Types.BindValue x v) = Set.union (Set.fromList [x]) (ge
 getVariablesInStatement _ = Set.empty
 
 getVariablesInValuesRead :: Types.ValuesRead -> Set.Set Types.Identifier
-getVariablesInValuesRead (Types.Lit _) = Set.empty
 getVariablesInValuesRead (Types.Record _ m) = Set.fromList (Map.elems m)
 getVariablesInValuesRead (Types.Proc p s) = Set.difference (getVariablesInStatement s) (Set.fromList p)
+getVariablesInValuesRead (Types.Expr exp) = getVariablesInExpression exp
