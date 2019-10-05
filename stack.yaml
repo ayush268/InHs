@@ -9,6 +9,10 @@ resolver: lts-14.7
 #   subdirs:
 #   - auto-update
 #   - wai
+
+# To Allow other users to build as well
+allow-different-user: true
+
 packages:
 - .
 # Dependency packages to be pulled from upstream that are not in the resolver.
