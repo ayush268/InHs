@@ -18,6 +18,7 @@ module Types
 import qualified Data.Map as Map
 import qualified Data.UUID as UUID
 
+
 -- Type Synonyms
 type Identifier = String
 type Literal = Int
@@ -34,6 +35,7 @@ type MemoryList = [Memory]
 
 type ReadFeatureMap = Map.Map Literal Identifier
 type FeatureMap = Map.Map Literal Memory
+
 
 -- New Types
 data Statement = Skip
@@ -75,8 +77,8 @@ data Value = Liter {litVal :: Literal}
              | Rec {recLabel  :: Literal,
                     recValues :: FeatureMap} deriving (Show, Read)
 
--- Making instance of a typeclass
 
+-- Making instance of a typeclass
 matchRecords :: Value -> Value -> Bool
 matchRecords (Rec a b) (Rec c d) = labelMatch && arityMatch && featuresMatch
   where labelMatch = (a == c)
