@@ -162,6 +162,23 @@ main = do
     let p96 = Types.Var s1 p95
     let p97 = Types.Var "F" p96
 
+    -- TestCase 16
+    -- Evaluating Expression (Addition)
+    let p98 = Types.BindValue s1 $ Types.Expr $ Types.Lit 10
+    let p99 = Types.BindValue s2 $ Types.Expr $ Types.Exp Types.Add (Types.Variable s1) (Types.Lit 20)
+    let p100 = Types.Multiple [p98, p99]
+    let p101 = Types.Var s2 p100
+    let p102 = Types.Var s1 p101
+
+    -- TestCase 17
+    -- Evaluating Expression (Multiplication)
+    let p103 = Types.BindValue s1 $ Types.Expr $ Types.Lit 12
+    let p104 = Types.BindValue s2 $ Types.Expr $ Types.Lit 27
+    let p105 = Types.BindValue s3 $ Types.Expr $ Types.Exp Types.Mult (Types.Variable s1) (Types.Variable s2)
+    let p106 = Types.Multiple [p103, p104, p105]
+    let p107 = Types.Var s3 p106
+    let p108 = Types.Var s2 p107
+    let p109 = Types.Var s1 p108
 
     -- ################################# NEGATIVE CASES #################################
     --
@@ -357,8 +374,22 @@ main = do
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------"
-    putStrLn "\n\n"
     
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram p102
+    print p102
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram p109
+    print p109
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------"
+    putStrLn "\n\n"
+
     -- ################################# NEGATIVE CASES #################################
 
     putStrLn "###################################################################"
