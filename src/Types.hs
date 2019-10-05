@@ -16,7 +16,6 @@ module Types
    MemoryList) where
 
 import qualified Data.Map as Map
-import qualified Data.UUID as UUID
 
 
 -- Type Synonyms
@@ -62,7 +61,7 @@ data Expression = Lit {val :: Literal}
                          leftOperand :: Expression,
                          rightOperand :: Expression} deriving (Eq, Show, Read)
 
-data Operator = Add | Sub | Mult deriving (Eq, Show, Read)
+data Operator = Add | Sub | Mult | Div deriving (Eq, Show, Read)
 
 data ValuesRead = Expr {expr :: Expression}
                   | Proc {params :: [Identifier],

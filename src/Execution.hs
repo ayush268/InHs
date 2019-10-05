@@ -5,8 +5,6 @@ module Execution
 
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
-import qualified Data.UUID as UUID
-import qualified System.Random as Rand
 
 import qualified Types
 import qualified Helpers

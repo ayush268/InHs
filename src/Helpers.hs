@@ -125,6 +125,7 @@ convertExpressionToValue (Types.Exp op left right) env sas
   | op == Types.Add  = Types.Liter $ leftValue + rightValue
   | op == Types.Sub  = Types.Liter $ leftValue - rightValue
   | op == Types.Mult = Types.Liter $ leftValue * rightValue
+  | op == Types.Div  = Types.Liter $ leftValue `div` rightValue
   where leftValue  = Types.litVal $ convertExpressionToValue left env sas
         rightValue = Types.litVal $ convertExpressionToValue right env sas
 
