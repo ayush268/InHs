@@ -8,7 +8,7 @@ test: clean
 	stack test
 	stack install --local-bin-path ./bin InHs
 
-setup: ./bin/InHs-exe
+all: ./bin/InHs-exe
 
 clean:
 	rm -rf ./bin
