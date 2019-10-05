@@ -5,12 +5,6 @@ import qualified Data.Map as Map
 
 main :: IO ()
 main = do
-    let p1 = Types.Var "x" Types.Skip
-    let p2 = Types.Var "y" p1
-    let p3 = Types.Var "z" p2
-    let p4 = Types.Multiple [Types.Skip, p1, p2]
-    let p5 = Types.Multiple [p4, p3, Types.Multiple [p1, p2, p3]]
-
     let s1 = "alice"
     let s2 = "bob"
     let s3 = "charles"
@@ -18,182 +12,248 @@ main = do
     let s5 = "eve"
     let s6 = "frank"
 
+    -- ################################# POSITIVE CASES #################################
+    --
+    -- TestCase 1
+    -- Variable declarations (different Combinations)
+    let p1 = Types.Var "x" Types.Skip
+    let p2 = Types.Var "y" p1
+    let p3 = Types.Var "z" p2
+    let p4 = Types.Multiple [Types.Skip, p1, p2]
+    let p5 = Types.Multiple [p4, p3, Types.Multiple [p1, p2, p3]]
+
+    -- TestCase 2
     -- Identifier binding succeeds (both unbound)
     let p6 = Types.BindIdent s1 s2
     let p7 = Types.Var s1 p6
     let p8 = Types.Var s2 p7
 
+    -- TestCase 3
     -- Identifier binding succeeds (s1 -> bound; s2 -> unbound)
-    let p30 = Types.BindIdent s1 s2
-    let p31 = Types.Multiple [Types.BindValue s1 $ Types.Lit 5, p30]
-    let p32 = Types.Var s1 p31
-    let p33 = Types.Var s2 p32
+    let p9 = Types.BindIdent s1 s2
+    let p10 = Types.BindValue s1 $ Types.Expr $ Types.Lit 5
+    let p11 = Types.Multiple [p10, p9]
+    let p12 = Types.Var s1 p11
+    let p13 = Types.Var s2 p12
 
-    -- Identifier binding succeeds (s1 -> unbound; s2 -> bound)
-    let p34 = Types.BindIdent s1 s2
-    let p35 = Types.Multiple [Types.BindValue s2 $ Types.Lit 5, p34]
-    let p36 = Types.Var s1 p35
-    let p37 = Types.Var s2 p36
-
-    -- Identifier binding fails; Variable out of scope
-    let p9 = Types.Var s1 Types.Skip
-    let p10 = Types.Multiple [p9, Types.BindIdent s2 s1]
-    let p11 = Types.Var s2 p10
-
-    -- Unification fails
-    let p15 = Types.BindValue s1 $ Types.Lit 5
-    let p16 = Types.BindValue s2 $ Types.Lit 7
-    let p17 = Types.BindIdent s1 s2
-    let p12 = Types.Multiple [p15, p16, p17]
-    let p13 = Types.Var s1 p12
-    let p14 = Types.Var s2 p13
-
-    -- Unification succeeds
-    let p21 = Types.BindValue s1 $ Types.Lit 5
-    let p22 = Types.BindValue s2 $ Types.Lit 5
-    let p23 = Types.BindIdent s1 s2
-    let p18 = Types.Multiple [p21, p22, p23]
+    -- TestCase 4
+    -- Unification of 3 variables
+    let p14 = Types.BindIdent s3 s2
+    let p15 = Types.BindIdent s2 s1
+    let p16 = Types.Multiple [p15, p14]
+    let p17 = Types.Var s3 p16
+    let p18 = Types.Var s2 p17
     let p19 = Types.Var s1 p18
-    let p20 = Types.Var s2 p19
 
+    -- TestCase 5
+    -- Unification succeeds (Bound to equal values)
+    let p20 = Types.BindValue s1 $ Types.Expr $ Types.Lit 5
+    let p21 = Types.BindValue s2 $ Types.Expr $ Types.Lit 5
+    let p22 = Types.BindIdent s1 s2
+    let p23 = Types.Multiple [p20, p21, p22]
+    let p24 = Types.Var s1 p23
+    let p25 = Types.Var s2 p24
+
+    -- TestCase 6
     -- Bind record to a value succeeds
-    let p24 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
-    let p25 = Types.Var s1 p24
-    let p28 = Types.Var s2 p25
+    let p26 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
+    let p27 = Types.Var s1 p26
+    let p28 = Types.Var s2 p27
     let p29 = Types.Var s3 p28
 
-    -- Binding two records fails (different arity)
-    let p38 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
-    let p39 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5)]
-    let p45 = Types.Multiple[p38, p39, Types.BindIdent s1 s4]
-    let p40 = Types.Var s1 p45
+    -- TestCase 7
+    -- Assign procedure value along with closure
+    let p30 = Types.BindValue s2 $ Types.Proc ["a", "b"] Types.Skip
+    let p31 = Types.Var s2 p30
+
+    -- TestCase 8
+    -- Collecting free variables from closures
+    let p32 = Types.BindIdent s1 s2
+    let p33 = Types.BindValue s3 $ Types.Proc [s2] p32
+    let p34 = Types.Var s1 p33
+    let p35 = Types.Var s2 p34
+    let p36 = Types.Var s3 p35
+
+    -- TestCase 9
+    -- Binding two records succeeds (same arity)
+    let p37 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
+    let p38 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5), (2, s6)]
+    let p39 = Types.Multiple[p37, p38, Types.BindIdent s1 s4]
+    let p40 = Types.Var s1 p39
     let p41 = Types.Var s2 p40
     let p42 = Types.Var s3 p41
     let p43 = Types.Var s4 p42
     let p44 = Types.Var s5 p43
+    let p45 = Types.Var s6 p44
 
-    -- Binding two records succeeds (same arity)
-    let p45 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
-    let p46 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5), (2, s6)]
-    let p47 = Types.Multiple[p45, p46, Types.BindIdent s1 s4]
-    let p48 = Types.Var s1 p47
-    let p49 = Types.Var s2 p48
-    let p50 = Types.Var s3 p49
-    let p51 = Types.Var s4 p50
-    let p52 = Types.Var s5 p51
-    let p53 = Types.Var s6 p52
-
-    -- Collecting free variables from closures
-    let p54 = Types.BindIdent s1 s2
-    let p55 = Types.BindValue s3 $ Types.Proc [s2] p54
-    let p56 = Types.Var s1 p55
-    let p57 = Types.Var s2 p56
-    let p58 = Types.Var s3 p57
-
-    -- Assign procedure value along with closure
-    let p26 = Types.BindValue s2 $ Types.Proc ["a", "b"] Types.Skip
-    let p27 = Types.Var s2 p26
-
+    -- TestCase 10
     -- Conditional Statements (Taking True branch)
     -- Unification should take place
-    let p59 = Types.BindIdent s1 s2
-    let p60 = Types.BindValue s2 $ Types.Lit 100
-    let p61 = Types.Multiple[Types.BindValue s1 $ Types.Lit 1, Types.Conditional s1 p59 p60]
-    let p62 = Types.Var s1 p61
-    let p63 = Types.Var s2 p62
+    let p46 = Types.BindIdent s1 s2
+    let p47 = Types.BindValue s2 $ Types.Expr $ Types.Lit 100
+    let p48 = Types.BindValue s1 $ Types.Expr $ Types.Lit 1
+    let p49 = Types.Conditional s1 p46 p47
+    let p50 = Types.Multiple[p48, p49]
+    let p51 = Types.Var s1 p50
+    let p52 = Types.Var s2 p51
 
+    -- TestCase 11
     -- Conditional Statements (Taking False branch)
-    -- Unification should NOT take place
-    let p64 = Types.BindIdent s1 s2
-    let p65 = Types.BindValue s2 $ Types.Lit 100
-    let p66 = Types.Multiple[Types.BindValue s1 $ Types.Lit 0, Types.Conditional s1 p64 p65]
-    let p67 = Types.Var s1 p66
-    let p68 = Types.Var s2 p67
+    -- Unification should NOT take place, s2 is assigned value 100
+    let p53 = Types.BindIdent s1 s2
+    let p54 = Types.BindValue s2 $ Types.Expr $ Types.Lit 100
+    let p55 = Types.BindValue s1 $ Types.Expr $ Types.Lit 0
+    let p56 = Types.Conditional s1 p53 p54
+    let p57 = Types.Multiple[p55, p56]
+    let p58 = Types.Var s1 p57
+    let p59 = Types.Var s2 p58
 
+    -- TestCase 12
     -- Match (Case) statement (Pattern matched)
+    -- Unification of s2 and s4 should occur
+    let p60 = Types.BindIdent s2 s3
+    let p61 = Types.BindIdent s2 "m"
+    let p62 = Types.BindValue s1 $ Types.Record 15 $ Map.fromList [(10, s4), (12, s3)]
+    let p63 = Types.Match s1 (Types.Record 15 $ Map.fromList [(10, "m"),(12,"n")]) p61 p60
+    let p64 = Types.Multiple[p62, p63]
+    let p65 = Types.Var s1 p64
+    let p66 = Types.Var s2 p65
+    let p67 = Types.Var s3 p66
+    let p68 = Types.Var s4 p67
+
+    -- TestCase 13
+    -- Match (Case) statement (Pattern UNmatched)
     -- Unification of s2 and s3 should occur
-    let p71 = Types.BindIdent s2 s3
-    let p72 = Types.BindValue s2 $ Types.Lit 100
-    let p69 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(10, s3), (12, s4)]
-    let p70 = Types.Match s1 (Types.Record 12 $ Map.fromList [(10, "m"),(12,"n")]) p71 p72
-    let p73 = Types.Multiple[p69, p70]
+    let p69 = Types.BindIdent s2 s3
+    let p70 = Types.BindIdent s2 "m"
+    let p71 = Types.BindValue s1 $ Types.Record 15 $ Map.fromList [(10, s4), (20, s3)]
+    let p72 = Types.Match s1 (Types.Record 15 $ Map.fromList [(10, "m"),(12,"n")]) p70 p69
+    let p73 = Types.Multiple [p71, p72]
     let p74 = Types.Var s1 p73
     let p75 = Types.Var s2 p74
     let p76 = Types.Var s3 p75
     let p77 = Types.Var s4 p76
 
-    -- Match (Case) statement (Pattern matched)
-    -- Unification of s2 and s3 should NOT occur
-    let p80 = Types.BindIdent s2 s3
-    let p81 = Types.BindValue s2 $ Types.Lit 100
-    let p78 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(10, s3), (12, s4)]
-    let p79 = Types.Match s1 (Types.Record 12 $ Map.fromList [(10, "m"),(22,"n")]) p80 p81
-    let p82 = Types.Multiple[p78, p79]
-    let p83 = Types.Var s1 p82
-    let p84 = Types.Var s2 p83
-    let p85 = Types.Var s3 p84
-    let p86 = Types.Var s4 p85
-
+    -- TestCase 14
     -- Procedure Call (Without free variables)
     -- Unification of s1 and s2 should occur (arguments equated)
-    let p88 = Types.BindValue s4 $ Types.Lit 1
-    let p89 = Types.BindValue s3 $ Types.Proc [s1, s2] $ Types.BindIdent s1 s2
-    let p90 = Types.Apply s3 [s4, s5]
-    let p96 = Types.Multiple[p89, p88, p90]
-    let p91 = Types.Var s1 p96
-    let p92 = Types.Var s2 p91
-    let p93 = Types.Var s3 p92
-    let p94 = Types.Var s4 p93
-    let p95 = Types.Var s5 p94
+    let p78 = Types.BindValue s2 $ Types.Expr $ Types.Lit 1
+    let p79 = Types.BindIdent "y" "x"
+    let p80 = Types.BindValue "F" $ Types.Proc ["x", "y"] p79
+    let p81 = Types.Apply "F" [s2, s1]
+    let p82 = Types.Multiple [p80, p78, p81]
+    let p83 = Types.Var s2 p82
+    let p84 = Types.Var s1 p83
+    let p85 = Types.Var "F" p84
 
+    -- TestCase 15
     -- Procedure Call (With free variables)
-    -- Unification of s3, s4, s5 (with 10) should occur
-    let p97 = Types.Multiple[Types.BindIdent s5 s4, Types.BindIdent s3 s5]
-    let p98 = Types.BindValue s3 $ Types.Lit 10
-    let p99 = Types.BindValue s6 $ Types.Proc [s4, s5] p97
-    let p100 = Types.Apply s6 [s1, s2]
-    let p106 = Types.Multiple[p99, p98, p100]
-    let p101 = Types.Var s1 p106
-    let p102 = Types.Var s2 p101
-    let p103 = Types.Var s3 p102
-    let p104 = Types.Var s4 p103
-    let p105 = Types.Var s5 p104
-    let p106 = Types.Var s6 p105
+    -- Unification of s1, s2, s3 (with 10) should occur
+    let p86 = Types.BindValue s3 $ Types.Expr $ Types.Lit 10
+    let p87 = Types.BindIdent "y" "x"
+    let p88 = Types.BindIdent s3 "y"
+    let p89 = Types.Multiple [p87, p88]
+    let p90 = Types.BindValue "F" $ Types.Proc ["x", "y"] p89
+    let p91 = Types.Apply "F" [s1, s2]
+    let p92 = Types.Multiple [p90, p86]
+    let p93 = Types.Var s3 p92
+    let p94 = Types.Multiple [p93, p91]
+    let p95 = Types.Var s2 p94
+    let p96 = Types.Var s1 p95
+    let p97 = Types.Var "F" p96
 
+
+    -- ################################# NEGATIVE CASES #################################
+    --
+    -- TestCase 1
+    -- Identifier binding fails; Variable out of scope
+    let n1 = Types.Var s1 Types.Skip
+    let n2 = Types.BindIdent s2 s1
+    let n3 = Types.Multiple [n1, n2]
+    let n4 = Types.Var s2 n3
+
+    -- TestCase 2
+    -- Unification fails (due to unequal values)
+    let n5 = Types.BindValue s1 $ Types.Expr $ Types.Lit 5
+    let n6 = Types.BindValue s2 $ Types.Expr $ Types.Lit 7
+    let n7 = Types.BindIdent s1 s2
+    let n8 = Types.Multiple [n5, n6, n7]
+    let n9 = Types.Var s1 n8
+    let n10 = Types.Var s2 n9
+
+    -- TestCase 3
+    -- Binding two records fails (different arity)
+    let n11 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(1, s2), (2, s3)]
+    let n12 = Types.BindValue s4 $ Types.Record 12 $ Map.fromList [(1, s5)]
+    let n13 = Types.BindIdent s1 s4
+    let n14 = Types.Multiple [n11, n12, n13]
+    let n15 = Types.Var s1 n14
+    let n16 = Types.Var s2 n15
+    let n17 = Types.Var s3 n16
+    let n18 = Types.Var s4 n17
+    let n19 = Types.Var s5 n18
+
+    -- TestCase 4
     -- Conditional expression is not a literal
-    let p107 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(10, s2), (12, s3)]
-    let p108 = Types.Conditional s1 (Types.BindValue s4 $ Types.Lit 1) (Types.BindValue s4 $ Types.Lit 2)
-    let p109 = Types.Multiple[p107, p108]
-    let p110 = Types.Var s1 p109
-    let p111 = Types.Var s2 p110
-    let p112 = Types.Var s3 p111
-    let p113 = Types.Var s4 p112
+    let n20 = Types.BindValue s1 $ Types.Record 12 $ Map.fromList [(10, s2), (12, s3)]
+    let n21 = Types.BindValue s4 $ Types.Expr $ Types.Lit 1
+    let n22 = Types.BindValue s4 $ Types.Expr $ Types.Lit 2
+    let n23 = Types.Conditional s1 n21 n22
+    let n24 = Types.Multiple [n20, n23]
+    let n25 = Types.Var s1 n24
+    let n26 = Types.Var s2 n25
+    let n27 = Types.Var s3 n26
+    let n28 = Types.Var s4 n27
 
+    -- TestCase 5
     -- Pattern in a case statement is not record
-    let p114 = Types.BindValue s2 $ Types.Lit 100
-    let p115 = Types.BindValue s2 $ Types.Lit 99
-    let p116 = Types.Multiple[Types.BindValue s1 $ Types.Lit 3, Types.Match s1 (Types.Lit 100) p114 p115]
-    let p117 = Types.Var s1 p116
-    let p118 = Types.Var s2 p117
+    let n29 = Types.BindValue s1 $ Types.Expr $ Types.Lit 100
+    let n30 = Types.BindValue s2 $ Types.Expr $ Types.Lit 10
+    let n31 = Types.BindValue s2 $ Types.Expr $ Types.Lit 1000
+    let n32 = Types.Match s1 (Types.Expr $ Types.Lit 10) n30 n31
+    let n33 = Types.Multiple [n29, n32]
+    let n34 = Types.Var s2 n33
+    let n35 = Types.Var s1 n34
 
+    -- TestCase 6
     -- Invalid Procedure Call (Type is not a closure)
-    let p119 = Types.BindValue s1 $ Types.Lit 12
-    let p120 = Types.BindValue s2 $ Types.Lit 13
-    let p121 = Types.Multiple[p119, p120, Types.Apply s1 [s2]]
-    let p122 = Types.Var s1 p121
-    let p123 = Types.Var s2 p122
+    let n36 = Types.BindValue s1 $ Types.Expr $ Types.Lit 10
+    let n37 = Types.Apply s1 [s2]
+    let n38 = Types.Multiple [n36, n37]
+    let n39 = Types.Var s2 n38
+    let n40 = Types.Var s1 n39
 
-    -- Invalid Procedure Call (Insufficient arguments)
-    let p124 = Types.BindIdent s4 s3
-    let p125 = Types.BindValue s2 $ Types.Lit 10
-    let p126 = Types.BindValue s1 $ Types.Proc [s3, s4] p124
-    let p127 = Types.Multiple[p126, p125, Types.Apply s1 [s2]]
-    let p128 = Types.Var s1 p127
-    let p129 = Types.Var s2 p128
-    let p130 = Types.Var s3 p129
-    let p131 = Types.Var s4 p130
+    -- TestCase 7
+    -- Invalid Procedure Call (Arguments arity mistmatch)
+    let n41 = Types.BindIdent "y" "x"
+    let n42 = Types.BindValue s1 $ Types.Proc ["x", "y"] n41
+    let n43 = Types.Apply s1 [s2]
+    let n44 = Types.Multiple [n42, n43]
+    let n45 = Types.Var s2 n44
+    let n46 = Types.Var s1 n45
 
+    -- TestCase 8
+    -- Evaluating Expression Fails (one operand is not bound to a value)
+    let n47 = Types.BindValue s1 $ Types.Expr $ Types.Lit 2
+    let n48 = Types.BindValue s3 $ Types.Expr $ Types.Exp Types.Sub (Types.Variable s1) (Types.Variable s2)
+    let n49 = Types.Multiple [n47, n48]
+    let n50 = Types.Var s3 n49
+    let n51 = Types.Var s2 n50
+    let n52 = Types.Var s1 n51
 
+    putStrLn "\n\n"
+
+    -- ###################################################################
+    --                          RUNNING TESTCASES
+    -- ###################################################################
+    --
+    -- ################################# POSITIVE CASES #################################
+
+    putStrLn "###################################################################"
+    putStrLn "                  RUNNING POSITIVE TESTCASES"
+    putStrLn "###################################################################"
+    
+    putStrLn "\n\n"
     let (x, _, y) = Ex.executeProgram p5
     print p5
     print y
@@ -207,25 +267,23 @@ main = do
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
-    -- Failure Case
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p11
-    print p11
+    let (x, _, y) = Ex.executeProgram p13
+    print p13
     print y
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    putStrLn "-----------------------PASSED---------------------------" 
-
-    -- Failure Case
-    putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p14
-    print p14
-    print y
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p20
-    print p20
+    let (x, _, y) = Ex.executeProgram p19
+    print p19
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram p25
+    print p25
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
@@ -238,61 +296,46 @@ main = do
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p27
-    print p27
+    let (x, _, y) = Ex.executeProgram p31
+    print p31
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p33
-    print p33
+    let (x, _, y) = Ex.executeProgram p36
+    print p36
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p37
-    print p37
-    print y
-    print x
-    putStrLn "-----------------------PASSED---------------------------" 
-
-    -- Failure Case
-    putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p44
-    print p44
-    print y
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    putStrLn "-----------------------PASSED---------------------------" 
-
-    putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p53
-    print p53
+    let (x, _, y) = Ex.executeProgram p45
+    print p45
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p58
-    print p58
+    let (x, _, y) = Ex.executeProgram p52
+    print p52
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p63
-    print p63
+    let (x, _, y) = Ex.executeProgram p59
+    print p59
     print y
     print x
-    putStrLn "-----------------------PASSED---------------------------" 
+    putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
     let (x, _, y) = Ex.executeProgram p68
     print p68
     print y
     print x
-    putStrLn "-----------------------PASSED---------------------------"
+    putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
     let (x, _, y) = Ex.executeProgram p77
@@ -302,50 +345,86 @@ main = do
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p86
-    print p86
+    let (x, _, y) = Ex.executeProgram p85
+    print p85
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p95
-    print p95
-    print y
-    print x
-    putStrLn "-----------------------PASSED---------------------------" 
-
-    putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p106
-    print p106
+    let (x, _, y) = Ex.executeProgram p97
+    print p97
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------"
+    putStrLn "\n\n"
     
+    -- ################################# NEGATIVE CASES #################################
+
+    putStrLn "###################################################################"
+    putStrLn "                    RUNNING NEGATIVE TESTCASES"
+    putStrLn "###################################################################"
+    
+    -- Failure Case
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram n4
+    print n4
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    -- Failure Case
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram n10
+    print n10
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
+    -- Failure Case
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram n19
+    print n19
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------" 
+
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p113
-    print p113
+    let (x, _, y) = Ex.executeProgram n28
+    print n28
+    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p118
-    print p118
+    let (x, _, y) = Ex.executeProgram n35
+    print n35
     Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p123
-    print p123
+    let (x, _, y) = Ex.executeProgram n40
+    print n40
     Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y) = Ex.executeProgram p131
-    print p131
+    let (x, _, y) = Ex.executeProgram n46
+    print n46
     Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------"
+
+    -- Failure case
+    putStrLn "\n\n"
+    let (x, _, y) = Ex.executeProgram n52
+    print n52
+    print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
