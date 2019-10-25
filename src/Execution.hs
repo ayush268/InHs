@@ -20,7 +20,7 @@ executeStack sas memory = foldl foldingFunction (sas, memory, [])
   where foldingFunction (sas, memory, envList) (Types.Skip, env) = (sas, memory, envList ++ [env])
 
 -- Multiple Statements
-        foldingFunction (sas, memory, envList) ((Types.Multiple stmts), env) = (executionSas, executionMemory, envList ++ executionEnv)
+        foldingFunction (sas, memory, envList) ((Types.Multiple stmts), env) = (executionSas, executionMemory, envList ++ [env] ++ executionEnv)
           where (executionSas, executionMemory, executionEnv) = executeStack sas memory (map (\b -> (b, env)) stmts)
 
 -- Var Statements
