@@ -1,14 +1,13 @@
 module Main where
 
-import Execution
+import ExecuteProgram
 import qualified Types
 
 main :: IO ()
 main = do
   input <- getLine
   let statement = read input :: Types.Statement
-  let (sas, memoryLeft, envList, stack) = executeProgram statement
+  let (sas, listOfEnvLists) = executeProgram statement
   print statement
-  print envList
+  print listOfEnvLists
   print sas
-  print stack

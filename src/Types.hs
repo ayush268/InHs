@@ -6,6 +6,7 @@ module Types
    Operator(..),
    ValuesRead(..),
    Value(..),
+   StackState(..),
    Identifier,
    Literal,
    Memory,
@@ -40,8 +41,6 @@ type FeatureMap = Map.Map Literal Memory
 type StackElement = (Statement, EnvironmentMap)
 type Stack = [StackElement]
 
-type IsSuspended = Bool
-
 -- New Types
 data Statement = Skip
                  | Multiple {stmts :: [Statement]}
@@ -59,7 +58,8 @@ data Statement = Skip
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
-                          parameters :: [Identifier]} deriving (Eq, Show, Read)
+                          parameters :: [Identifier]}
+                 | Thread {stmt :: Statement} deriving (Eq, Show, Read)
 
 data Expression = Lit {val :: Literal}
                   | Variable {expVar :: Identifier}
@@ -82,6 +82,7 @@ data Value = Liter {litVal :: Literal}
              | Rec {recLabel  :: Literal,
                     recValues :: FeatureMap} deriving (Show, Read)
 
+data StackState = Ready | Suspended | Completed deriving (Eq, Ord, Show, Read)
 
 -- Making instance of a typeclass
 matchRecords :: Value -> Value -> Bool
