@@ -13,7 +13,9 @@ module Types
    MemoryToEqClassMap,
    EqClassToValueMap,
    SingleAssignmentStore,
-   MemoryList) where
+   MemoryList,
+   StackElement,
+   Stack) where
 
 import qualified Data.Map as Map
 
@@ -35,6 +37,10 @@ type MemoryList = [Memory]
 type ReadFeatureMap = Map.Map Literal Identifier
 type FeatureMap = Map.Map Literal Memory
 
+type StackElement = (Statement, EnvironmentMap)
+type Stack = [StackElement]
+
+type IsSuspended = Bool
 
 -- New Types
 data Statement = Skip

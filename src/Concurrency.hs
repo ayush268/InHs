@@ -1,4 +1,4 @@
--- Module for handling semantic Multi Stack and
+-- Module for handling functions based on Multi Stack and
 -- Concurrency features,
 -- Part of Declarative Concurrent Model
 
