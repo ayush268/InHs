@@ -203,10 +203,13 @@ The Specification for each of the Records and Value types can be found in [Examp
 ```
 ├── app
 │   └── Main.hs
-├── bin
-│   └── InHs-exe
+├── LICENSE
+├── Makefile
+├── package.yaml
+├── README.md
 ├── Setup.hs
 ├── src
+│   ├── ExecuteProgram.hs
 │   ├── Execution.hs
 │   ├── Helpers.hs
 │   ├── SingleAssignmentStore.hs
