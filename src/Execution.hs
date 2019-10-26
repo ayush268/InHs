@@ -2,6 +2,8 @@
 -- Concurrency features, and the thread Scheduler + Context Switching
 -- Part of Declarative Concurrent Model
 
+-- Exposes only threadScheduler, all other functions are local
+-- and not needed by anything outside (for now)
 module Execution
   (threadScheduler) where
 
@@ -13,6 +15,9 @@ import qualified Types
 import qualified Helpers
 import qualified SingleAssignmentStore as SAS
 
+-- Checks whether a variable is bound to a Value in the SAS or not
+-- Returns False if the variable does not exist in the environment or
+-- is not bound to a value.
 isBound :: Types.Identifier -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Bool
 isBound src env (eqMap, valueMap)
   | (Maybe.isJust $ Map.lookup src env) == True = if (Maybe.isJust eqClass)
@@ -22,6 +27,16 @@ isBound src env (eqMap, valueMap)
   where var = Map.lookup src env
         eqClass = Map.lookup (Maybe.fromJust var) eqMap
 
+
+-- ####################################################################################################
+-- Threading functions (for new threads and context switching between READY threads)
+-- ####################################################################################################
+
+-- threadScheduler takes a SAS, Remaining Memory List, List of Stack Tuples each denoting a thread (containing state and variable it is suspended on if any),
+-- returns the updated SAS, Memory List and List of Stack Tuples (Always sorted according to the Stack State) according to the following 3 cases:
+-- All Threads are in Completed State -> return since program execution is complere
+-- All Threads are either in Suspended/Completed State (No Ready Thread) -> Give an error as program cannot be executed further.
+-- Program contains ATLEAT ONE READY Thread -> performs a Context Switch to the thread, executes it and returns updated SAS, Memory and StackList which needs to be appended.
 threadScheduler :: Types.SingleAssignmentStore -> Types.MemoryList -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)] -> (Types.SingleAssignmentStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)])
 threadScheduler sas memory stackList
   | null stackList                               = (sas, memory, stackList)
@@ -33,6 +48,9 @@ threadScheduler sas memory stackList
         updatedStackList = List.sortOn (\(_,state,_,_) -> state) updatedStateStackList
         updatedStateStackList = updateSuspendedState updatedSas ((tail stackList) ++ stackListToAppend)
 
+-- contextSwitchAndExecute takes a SAS, Memory List, Stack to Execute and executes the stack by calling the executeStack function
+-- it returns the updated SAS, Memory List and Stack Tuples.
+-- The four cases of guards are trivially seen here
 contextSwitchAndExecute :: Types.SingleAssignmentStore -> Types.MemoryList -> Types.Stack -> [Types.EnvironmentMap] -> (Types.SingleAssignmentStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)])
 contextSwitchAndExecute sas memory stack envList
   | (null updatedStack) && (null newStacksToAdd)       = (updatedSas, updatedMemory, [(updatedStack, Types.Completed, updatedEnvList, "")])
@@ -43,24 +61,37 @@ contextSwitchAndExecute sas memory stack envList
         suspendedOn = getSuspendedVar $ head updatedStack
         newStackTuples = map (\stack -> (stack, Types.Ready, [], "")) newStacksToAdd
 
+-- ####################################################################################################
 
+
+-- ####################################################################################################
+-- Functions dealing with Cases of Suspended Statement (i.e. Suspended Threads)
+-- ####################################################################################################
+
+-- getSuspendedVar returns the Identifier on which the stack is suspended
 getSuspendedVar :: Types.StackElement -> Types.Identifier
 getSuspendedVar ((Types.Conditional src _ _), env) = src
 getSuspendedVar ((Types.Match src _ _ _), env)     = src
 getSuspendedVar ((Types.Apply src _), env)         = src
 getSuspendedVar _                                  = ""
 
-
+-- The updateSuspendedState will update the Stack State of all the Stacks for which the variable (on which they were suspended) is not bound in the SAS,
+-- It will only change the state of Suspended stacks, others are left as it is.
 updateSuspendedState :: Types.SingleAssignmentStore -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)] -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)]
 updateSuspendedState sas stackList = map (stateChangeFunc sas) stackList
 
-
+-- The stateChangeFunc is just a helper function for the Map used above,
+-- The working is trivial, if State of Stack is Suspended and variable (on which it is suspended) is bound, then update it else do nothing.
 stateChangeFunc :: Types.SingleAssignmentStore -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier) -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], Types.Identifier)
 stateChangeFunc sas (stack, state, envList, var)
   | state == Types.Suspended = if (isBound var (snd $ head stack) sas)
                                  then (stack, Types.Ready, envList, "")
                                  else (stack, state, envList, var)
   | otherwise                = (stack, state, envList, var)
+
+-- ####################################################################################################
+
+-- THE MAIN FUNCTION, TAKING CARE OF EACH STATEMENT INDIVIDUALLY
 
 -- executeStack takes current single assignment store, memory, environment list (for output), semantic stack and
 -- List of new stacks which need to be added to the semantic multi stack.

@@ -41,6 +41,7 @@ type FeatureMap = Map.Map Literal Memory
 type StackElement = (Statement, EnvironmentMap)
 type Stack = [StackElement]
 
+
 -- New Types
 data Statement = Skip
                  | Multiple {stmts :: [Statement]}
@@ -83,6 +84,7 @@ data Value = Liter {litVal :: Literal}
                     recValues :: FeatureMap} deriving (Show, Read)
 
 data StackState = Ready | Suspended | Completed deriving (Eq, Ord, Show, Read)
+
 
 -- Making instance of a typeclass
 matchRecords :: Value -> Value -> Bool
