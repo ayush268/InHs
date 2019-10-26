@@ -2,7 +2,7 @@
 
 An implementation of Oz Interpreter in Haskell.
 
-This Interpreter was initially developed as part of an [Assignment](https://www.cse.iitk.ac.in/users/satyadev/au19/hw2.pdf) for the Course - Principles of Programming Languages ([CS350A](https://cse.iitk.ac.in/pages/CS350.html)), IITK
+This Interpreter was initially developed as part of an [Assignment 2](https://www.cse.iitk.ac.in/users/satyadev/au19/hw2.pdf) and [Assignment 3](https://www.cse.iitk.ac.in/users/satyadev/au19/hw3.html) for the Course - Principles of Programming Languages ([CS350A](https://cse.iitk.ac.in/pages/CS350.html)), IITK
 
 ---
 
@@ -26,7 +26,6 @@ This also catches the exception for the intentionally failing tests such as *uni
 
 
 Please refer to [Type Specification](#type-specification) and [Examples](#examples) sections to get an idea of how to give the binary an input program to execute.
-
 
 ---
 
@@ -53,8 +52,14 @@ data Statement = Skip
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
-                          parameters :: [Identifier]} deriving (Eq, Show, Read)
+                          parameters :: [Identifier]}
+                 | Thread {stmt :: Statement} deriving (Eq, Show, Read)
+```
 
+* **StackState** Type (Ready, Suspended, Completed), for Concurreny
+
+``` Haskell
+data StackState = Ready | Suspended | Completed deriving (Eq, Ord, Show, Read)
 ```
 
 * **Value** Type (Literal, Record, Closures)
@@ -96,6 +101,12 @@ data Operator = Add | Sub | Mult | Div deriving (Eq, Show, Read)
 ---
 
 ## Examples
+
+- Concurrent Program (Thread Statement which binds the variable *alice* for Conditional suspendable statements), this corresponds to *Positive TestCase 19*.
+
+``` Haskell
+Var {dest = "alice", stmt = Var {dest = "bob", stmt = Var {dest = "charles", stmt = Multiple {stmts = [Thread {stmt = BindIdent {dest = "charles", src = "alice"}},BindValue {dest = "charles", value = Expr {expr = Lit {val = 0}}},Conditional {src = "alice", fststmt = BindIdent {dest = "bob", src = "alice"}, sndstmt = BindValue {dest = "bob", value = Expr {expr = Lit {val = 100}}}}]}}}}
+```
 
 - Evaluating Expressions (Multiplication of 2 Variables, namely *alice*, *bob* and stored in a 3rd variable *charles*), this corresponds to *Positive TestCase 17*.
 
@@ -149,6 +160,9 @@ We have divided the test-suite into 2 classes, namely **Positive** and **Negativ
 | 15 | Procedure Call (Apply Statement) (with free variables) | Passed |
 | 16 | Evaluating Expressions (Addition of a Variable and a literal) | Passed |
 | 17 | Evaluating Expressions (Multiplication of 2 Variables) | Passed |
+| 18 | Thread Statement (without Suspend Case) | Passed |
+| 19 | Thread Statement (with Suspension of Conditional Statement) | Passed |
+| 20 | Multiple Threads (Depending on one another, suspension goes back and forth) | Passed |
 
 ### Negative Test Cases (Raising Exceptions)
 |S No|__Test Description__|__Result__|
@@ -161,6 +175,8 @@ We have divided the test-suite into 2 classes, namely **Positive** and **Negativ
 |6|Invalid Procedure Call (type of variable is not closure)|Passed|
 |7|Invalid Procedure Call (Arity of Call and stored Closure don't match)|Passed|
 |8|Evaluating Expressions Fails (one operand not bound to a value)|Passed|
+|9|Single suspendable Statement Failure Case|Passed|
+|10|Multiple Statements Suspended on each other (Conditional, Match and Apply)|Passed|
 
 ---
 
@@ -178,6 +194,7 @@ The interpreter requires input in AST format. Here is a brief specification of h
 | if \<x\> then \<s\>1 else \<s\>2 end | [conditional ident(x) s1 s2] | Conditional { src = "x", fststmt = `Statement`, sndstmt = `Statement` } |
 | case \<x\> of \<p1\> then \<s\>1 else \<s\>2 end | [match ident(x) p1 s1 s2] | Match { src = "x", pattern = `Record`, fststmt = `Statement`, sndstmt = `Statement` } |
 | {F X1 ... Xn} | [apply ident(f) ident(x1) ... ident(xn)] | Apply { func = "F", parameters = ["X1", ... , "Xn"] } |
+| thread \<s\> end | [Thread s] | Thread { stmt = `Statement` } |
 
 The Specification for each of the Records and Value types can be found in [Examples](#examples) section.
 
@@ -201,13 +218,10 @@ The Specification for each of the Records and Value types can be found in [Examp
 
 ```
 
-* `Execution.hs`: Main program. Calls `executeStack` which in turn defines operations
-of the abstract machine depending on the type of statement.
-
+* `ExecuteProgram.hs`: Main program. Calls `threadScheduler` which picks a READY stack and calls `executeStack` which defines operations of the abstract machine depending on the type of statement.
+* `Execution.hs`: All the functions related to Threading, Context Switch and Execution Semantics of each statement and stack are defined here, they in turn call functions from different modules.
 * `Helpers.hs` : Set of helper functions to convert `ValuesRead` type to `Value` type or retrieve values from SAS or free variables from a procedure value and many more.
-
 * `SingleAssignmentStore.hs` : This is where the MAGIC happens, it implements the code for SAS and UNIFICATION Algorithm for literals, records and values.
-
 * `Types.hs` : Defines all the types and typeclasses used in the project. Brief intro
 is given in the [Type Specification](#type-specification) section.
 
