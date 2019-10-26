@@ -180,6 +180,49 @@ main = do
     let p108 = Types.Var s2 p107
     let p109 = Types.Var s1 p108
 
+    -- TestCase 18
+    -- Thread Statements (without Suspend Cases)
+    let p110 = Types.Thread $ Types.BindValue s1 $ Types.Expr $ Types.Lit 2
+    let p111 = Types.Thread $ Types.BindIdent s2 s1
+    let p112 = Types.Multiple [p110, p111]
+    let p113 = Types.Var s2 p112
+    let p114 = Types.Var s1 p113
+
+    -- TestCase 19
+    -- Thread Statement (with Suspend case of Conditional)
+    let p115 = Types.Thread $ Types.BindIdent s3 s1
+    let p116 = Types.BindValue s3 $ Types.Expr $ Types.Lit 0
+    let p117 = Types.BindIdent s2 s1
+    let p118 = Types.BindValue s2 $ Types.Expr $ Types.Lit 100
+    let p119 = Types.Conditional s1 p117 p118
+    let p120 = Types.Var s3 $ Types.Multiple [p115, p116, p119]
+    let p121 = Types.Var s2 p120
+    let p122 = Types.Var s1 p121
+
+    -- TestCase 20
+    -- Thread Statement (with Suspend Back and Forth)
+    -- Original Thread - suspends,
+    -- Second Thread - executes, binds s1 and suspends
+    -- Original Thread - continues, binds F and completes
+    -- Second Thread - continues, calls F and completes
+    let p123 = Types.BindValue s4 $ Types.Expr $ Types.Lit 0
+    let p124 = Types.BindIdent s1 s4
+    let p125 = Types.Apply "F" [s1, s2]
+    let p126 = Types.Thread $ Types.Multiple [p124, p125]
+    let p127 = Types.BindValue s5 $ Types.Expr $ Types.Lit 10
+    let p128 = Types.BindValue s5 $ Types.Expr $ Types.Lit 25
+    let p129 = Types.Conditional s1 p127 p128
+    let p130 = Types.BindIdent "Y" "X"
+    let p131 = Types.BindIdent s3 "Y"
+    let p132 = Types.BindValue "F" $ Types.Proc ["X", "Y"] $ Types.Multiple [p130, p131]
+    let p133 = Types.Multiple [p123, p126, p129, p132]
+    let p134 = Types.Var s5 p133
+    let p135 = Types.Var s4 p134
+    let p136 = Types.Var s3 p135
+    let p137 = Types.Var s2 p136
+    let p138 = Types.Var s1 p137
+    let p139 = Types.Var "F" p138
+
     -- ################################# NEGATIVE CASES #################################
     --
     -- TestCase 1
@@ -257,6 +300,31 @@ main = do
     let n50 = Types.Var s3 n49
     let n51 = Types.Var s2 n50
     let n52 = Types.Var s1 n51
+
+    -- TestCase 9
+    -- Single Suspended Statement
+    -- (Should Fail since cannot be bound)
+    let n53 = Types.BindIdent s2 s1
+    let n54 = Types.BindValue s2 $ Types.Expr $ Types.Lit 100
+    let n55 = Types.Conditional s1 n53 n54
+    let n56 = Types.Var s1 n55
+    let n57 = Types.Var s2 n56
+
+    -- TestCase 10
+    -- Multiple Statements suspended on each other
+    -- 3 different Thread (each will end up suspended, thus not halt)
+    let n58 = Types.Thread $ Types.Apply s3 []
+    let n59 = Types.BindValue s1 $ Types.Expr $ Types.Lit 1
+    let n60 = Types.BindValue s1 $ Types.Expr $ Types.Lit 0
+    let n61 = Types.Match s2 (Types.Record 10 $ Map.fromList [(1, s3)]) n59 n60
+    let n62 = Types.Thread n61
+    let n63 = Types.BindValue s2 $ Types.Record 10 $ Map.fromList [(1, s1)]
+    let n64 = Types.BindValue s2 $ Types.Record 10 $ Map.fromList [(1, s3)]
+    let n65 = Types.Conditional s1 n63 n64
+    let n66 = Types.Multiple [n58, n62, n65]
+    let n67 = Types.Var s3 n66
+    let n68 = Types.Var s2 n67
+    let n69 = Types.Var s1 n68
 
     putStrLn "\n\n"
 
@@ -388,6 +456,28 @@ main = do
     print y
     print x
     putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (x, y) = Ex.executeProgram p114
+    print p114
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (x, y) = Ex.executeProgram p122
+    print p122
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (x, y) = Ex.executeProgram p139
+    print p139
+    print y
+    print x
+    putStrLn "-----------------------PASSED---------------------------"
+
     putStrLn "\n\n"
 
     -- ################################# NEGATIVE CASES #################################
@@ -457,5 +547,21 @@ main = do
     let (x, y) = Ex.executeProgram n52
     print n52
     print y
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------"
+
+    -- Failure case
+    putStrLn "\n\n"
+    let (x, y) = Ex.executeProgram n57
+    print n57
+    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------"
+
+    -- Failure case
+    putStrLn "\n\n"
+    let (x, y) = Ex.executeProgram n69
+    print n69
+    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
