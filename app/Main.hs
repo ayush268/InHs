@@ -7,7 +7,13 @@ main :: IO ()
 main = do
   input <- getLine
   let statement = read input :: Types.Statement
-  let (sas, listOfEnvLists) = executeProgram statement
+  let (sas, listOfEnvLists, listOfSas) = executeProgram statement
+  putStrLn "###########################################################"
   print statement
+  putStrLn "###########################################################"
   print listOfEnvLists
+  putStrLn "###########################################################"
+  print listOfSas
+  putStrLn "###########################################################"
   print sas
+  putStrLn "###########################################################"
