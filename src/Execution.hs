@@ -37,29 +37,29 @@ isBound src env (eqMap, valueMap)
 -- All Threads are in Completed State -> return since program execution is complere
 -- All Threads are either in Suspended/Completed State (No Ready Thread) -> Give an error as program cannot be executed further.
 -- Program contains ATLEAT ONE READY Thread -> performs a Context Switch to the thread, executes it and returns updated SAS, Memory and StackList which needs to be appended.
-threadScheduler :: Types.SingleAssignmentStore -> Types.MemoryList -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)] -> (Types.SingleAssignmentStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)])
-threadScheduler sas memory stackList
-  | null stackList                               = (sas, memory, stackList)
-  | (_, Types.Completed, _, _, _) <- head stackList = (sas, memory, stackList)
-  | (_, Types.Suspended, _, _, _) <- head stackList = error $ "All statements are in suspended state, cannot execute the threads!"
-  | (_, Types.Ready, _, _, _)     <- head stackList = threadScheduler updatedSas updatedMemory updatedStackList
-  where (updatedSas, updatedMemory, stackListToAppend) = contextSwitchAndExecute sas memory stack envList sasList
-        (stack, _, envList, sasList, _) = head stackList
-        updatedStackList = List.sortOn (\(_,state,_,_,_) -> state) updatedStateStackList
-        updatedStateStackList = updateSuspendedState updatedSas ((tail stackList) ++ stackListToAppend)
+threadScheduler :: Types.SingleAssignmentStore -> Types.TriggerStore -> Types.MemoryList -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)] -> (Types.SingleAssignmentStore, Types.TriggerStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)])
+threadScheduler sas triggerStore memory stackList
+  | null stackList                                     = (sas, triggerStore, memory, stackList)
+  | (_, Types.Completed, _, _, _, _) <- head stackList = (sas, triggerStore, memory, stackList)
+  | (_, Types.Suspended, _, _, _, _) <- head stackList = error $ "All statements are in suspended state, cannot execute the threads!"
+  | (_, Types.Ready, _, _, _, _)     <- head stackList = threadScheduler updatedSas updatedTriggerStore updatedMemory updatedStackList
+  where (updatedSas, triggerStoreAfterExecution, updatedMemory, stackListToAppend) = contextSwitchAndExecute sas triggerStore memory stack envList sasList triggerStoreList
+        (stack, _, envList, sasList, triggerStoreList, _) = head stackList
+        updatedStackList = List.sortOn (\(_,state,_,_,_,_) -> state) updatedStateStackList
+        (updatedTriggerStore, updatedStateStackList) = updateSuspendedState updatedSas triggerStoreAfterExecution ((tail stackList) ++ stackListToAppend)
 
 -- contextSwitchAndExecute takes a SAS, Memory List, Stack to Execute and executes the stack by calling the executeStack function
 -- it returns the updated SAS, Memory List and Stack Tuples.
 -- The four cases of guards are trivially seen here
-contextSwitchAndExecute :: Types.SingleAssignmentStore -> Types.MemoryList -> Types.Stack -> [Types.EnvironmentMap] -> [Types.SingleAssignmentStore] -> (Types.SingleAssignmentStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)])
-contextSwitchAndExecute sas memory stack envList sasList
-  | (null updatedStack) && (null newStacksToAdd)       = (updatedSas, updatedMemory, [(updatedStack, Types.Completed, updatedEnvList, updatedSasList, "")])
-  | (not $ null updatedStack) && (null newStacksToAdd) = (updatedSas, updatedMemory, [(updatedStack, Types.Suspended, updatedEnvList, updatedSasList, suspendedOn)])
-  | (null updatedStack) && (not $ null newStacksToAdd) = (updatedSas, updatedMemory, newStackTuples ++ [(updatedStack, Types.Completed, updatedEnvList, updatedSasList, "")])
-  | otherwise                                          = (updatedSas, updatedMemory, newStackTuples ++ [(updatedStack, Types.Suspended, updatedEnvList, updatedSasList, suspendedOn)])
-  where (updatedSas, updatedMemory, updatedEnvList, updatedSasList, updatedStack, newStacksToAdd) = executeStack sas memory envList sasList stack []
+contextSwitchAndExecute :: Types.SingleAssignmentStore -> Types.TriggerStore -> Types.MemoryList -> Types.Stack -> [Types.EnvironmentMap] -> [Types.SingleAssignmentStore] -> [Types.TriggerStore] -> (Types.SingleAssignmentStore, Types.TriggerStore, Types.MemoryList, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)])
+contextSwitchAndExecute sas triggerStore memory stack envList sasList triggerStoreList
+  | (null updatedStack) && (null newStacksToAdd)       = (updatedSas, updatedTriggerStore, updatedMemory, [(updatedStack, Types.Completed, updatedEnvList, updatedSasList, updatedTriggerStoreList, "")])
+  | (not $ null updatedStack) && (null newStacksToAdd) = (updatedSas, updatedTriggerStore, updatedMemory, [(updatedStack, Types.Suspended, updatedEnvList, updatedSasList, updatedTriggerStoreList, suspendedOn)])
+  | (null updatedStack) && (not $ null newStacksToAdd) = (updatedSas, updatedTriggerStore, updatedMemory, newStackTuples ++ [(updatedStack, Types.Completed, updatedEnvList, updatedSasList, updatedTriggerStoreList, "")])
+  | otherwise                                          = (updatedSas, updatedTriggerStore, updatedMemory, newStackTuples ++ [(updatedStack, Types.Suspended, updatedEnvList, updatedSasList, updatedTriggerStoreList, suspendedOn)])
+  where (updatedSas, updatedTriggerStore, updatedMemory, updatedEnvList, updatedSasList, updatedTriggerStoreList, updatedStack, newStacksToAdd) = executeStack sas triggerStore memory envList sasList triggerStoreList stack []
         suspendedOn = getSuspendedVar $ head updatedStack
-        newStackTuples = map (\stack -> (stack, Types.Ready, [], [], "")) newStacksToAdd
+        newStackTuples = map (\stack -> (stack, Types.Ready, [], [], [], "")) newStacksToAdd
 
 -- ####################################################################################################
 
@@ -77,17 +77,19 @@ getSuspendedVar _                                  = ""
 
 -- The updateSuspendedState will update the Stack State of all the Stacks for which the variable (on which they were suspended) is not bound in the SAS,
 -- It will only change the state of Suspended stacks, others are left as it is.
-updateSuspendedState :: Types.SingleAssignmentStore -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)] -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)]
-updateSuspendedState sas stackList = map (stateChangeFunc sas) stackList
+-- TODO
+updateSuspendedState :: Types.SingleAssignmentStore -> Types.TriggerStore -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)] -> (Types.TriggerStore, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)])
+updateSuspendedState sas triggerStore stackList = (triggerStore, map (stateChangeFunc sas) stackList)
 
 -- The stateChangeFunc is just a helper function for the Map used above,
 -- The working is trivial, if State of Stack is Suspended and variable (on which it is suspended) is bound, then update it else do nothing.
-stateChangeFunc :: Types.SingleAssignmentStore -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier) -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Identifier)
-stateChangeFunc sas (stack, state, envList, sasList, var)
+-- TODO
+stateChangeFunc :: Types.SingleAssignmentStore -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier) -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)
+stateChangeFunc sas (stack, state, envList, sasList, triggerStoreList, var)
   | state == Types.Suspended = if (isBound var (snd $ head stack) sas)
-                                 then (stack, Types.Ready, envList, sasList, "")
-                                 else (stack, state, envList, sasList, var)
-  | otherwise                = (stack, state, envList, sasList, var)
+                                 then (stack, Types.Ready, envList, sasList, triggerStoreList, "")
+                                 else (stack, state, envList, sasList, triggerStoreList, var)
+  | otherwise                = (stack, state, envList, sasList, triggerStoreList, var)
 
 -- ####################################################################################################
 
@@ -99,24 +101,25 @@ stateChangeFunc sas (stack, state, envList, sasList, var)
 -- If the the semantic stack produced is empty, then execution is successful and not suspended.
 -- NOTE: The last return value in the Tuple is the stacks (which need to added to multi stack for thread statements)
 
-executeStack :: Types.SingleAssignmentStore -> Types.MemoryList -> [Types.EnvironmentMap] -> [Types.SingleAssignmentStore] -> Types.Stack -> [Types.Stack] -> (Types.SingleAssignmentStore, Types.MemoryList, [Types.EnvironmentMap], [Types.SingleAssignmentStore], Types.Stack, [Types.Stack])
-executeStack sas memory envList sasList [] stacks = (sas, memory, envList, sasList, [], stacks)
+executeStack :: Types.SingleAssignmentStore -> Types.TriggerStore -> Types.MemoryList -> [Types.EnvironmentMap] -> [Types.SingleAssignmentStore] -> [Types.TriggerStore] -> Types.Stack -> [Types.Stack] -> (Types.SingleAssignmentStore, Types.TriggerStore, Types.MemoryList, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Stack, [Types.Stack])
+executeStack sas triggerStore memory envList sasList triggerStoreList [] stacks = (sas, triggerStore, memory, envList, sasList, triggerStoreList, [], stacks)
 
 -- Skip Statement
-executeStack sas memory envList sasList ((Types.Skip, env):xs) stacks = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) xs stacks
+executeStack sas triggerStore memory envList sasList triggerStoreList ((Types.Skip, env):xs) stacks = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
 
 -- Multiple Statements
-executeStack sas memory envList sasList (((Types.Multiple stmts), env):xs) stacks = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) (stmtList ++ xs) stacks
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Multiple stmts), env):xs) stacks = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (stmtList ++ xs) stacks
   where stmtList = map (\b -> (b, env)) stmts
 
 -- Var Statements
-executeStack sas memory envList sasList (((Types.Var dest stmt), env):xs) stacks = executeStack updatedSas updatedMemory (envList ++ [env]) (sasList ++ [sas]) ([stackElement] ++ xs) stacks
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Var dest stmt), env):xs) stacks = executeStack updatedSas triggerStore updatedMemory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) ([stackElement] ++ xs) stacks
   where (updatedSas, updatedMemory) = SAS.addVariable sas memory
         updatedEnv                  = Map.insert dest (head memory) env
         stackElement                = (stmt, updatedEnv)
 
 -- BindIdent Statements
-executeStack sas memory envList sasList (((Types.BindIdent dest src), env):xs) stacks = executeStack updatedSas memory (envList ++ [env]) (sasList ++ [sas]) xs stacks
+-- TODO (update trigger store and if variable is bound then add a new stack)
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.BindIdent dest src), env):xs) stacks = executeStack updatedSas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
   where updatedSas = if (Maybe.isNothing (Map.lookup dest env)) || (Maybe.isNothing (Map.lookup src env))
                        then error $ "Bind Identifier Statement Error: Var " ++ dest ++ " OR Var " ++ src ++ " not in scope."
                        else SAS.unifyVariables sas x y
@@ -124,17 +127,19 @@ executeStack sas memory envList sasList (((Types.BindIdent dest src), env):xs) s
                                y = Maybe.fromJust (Map.lookup src env)
 
 -- BindValue Statements
-executeStack sas memory envList sasList (((Types.BindValue dest value), env):xs) stacks = executeStack updatedSas memory (envList ++ [env]) (sasList ++ [sas]) xs stacks
+-- TODO (update trigger store and if variable is bound, even to a record, then add a new stack)
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.BindValue dest value), env):xs) stacks = executeStack updatedSas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
   where updatedSas = if (Maybe.isNothing (Map.lookup dest env))
                        then error $ "Bind Value Statement Error: Var " ++ dest ++ " not in scope."
                        else SAS.bindValue sas x value env
                          where x = Maybe.fromJust (Map.lookup dest env)
 
 -- Conditional Statement
-executeStack sas memory envList sasList (((Types.Conditional src fststmt sndstmt), env):xs) stacks
-  | isBound src env sas == True = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) ([stackElement] ++ xs) stacks
+-- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Conditional src fststmt sndstmt), env):xs) stacks
+  | isBound src env sas == True = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup src env) == True = error $ "Conditional Statement Error: Var " ++ src ++ " not in scope."
-  | otherwise = (sas, memory, envList, sasList, (((Types.Conditional src fststmt sndstmt), env):xs), stacks)
+  | otherwise = (sas, triggerStore, memory, envList, sasList, triggerStoreList, (((Types.Conditional src fststmt sndstmt), env):xs), stacks)
   where stackElement = if (Helpers.isLit val)
                          then if (Types.litVal val) /= 0
                                 then (fststmt, env)
@@ -143,10 +148,11 @@ executeStack sas memory envList sasList (((Types.Conditional src fststmt sndstmt
                          where val = Helpers.getValue src env sas
 
 -- Match Statement
-executeStack sas memory envList sasList (((Types.Match src pattern fststmt sndstmt), env):xs) stacks
-  | isBound src env sas == True = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) ([stackElement] ++ xs) stacks
+-- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Match src pattern fststmt sndstmt), env):xs) stacks
+  | isBound src env sas == True = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup src env) == True = error $ "Match Statement Error: Var " ++ src ++ " not in scope."
-  | otherwise = (sas, memory, envList, sasList, (((Types.Match src pattern fststmt sndstmt), env):xs), stacks)
+  | otherwise = (sas, triggerStore, memory, envList, sasList, triggerStoreList, (((Types.Match src pattern fststmt sndstmt), env):xs), stacks)
   where stackElement = if (Helpers.isRec val) && (Helpers.isRecord pattern)
                          then if (Helpers.matchPattern val pattern) -- Match label, arity and features
                                 then (fststmt, Helpers.extendEnvFromPattern val pattern env)
@@ -155,10 +161,11 @@ executeStack sas memory envList sasList (((Types.Match src pattern fststmt sndst
                          where val = Helpers.getValue src env sas
 
 -- Apply Statement (Procedure Application)
-executeStack sas memory envList sasList (((Types.Apply func parameters), env):xs) stacks
-  | isBound func env sas == True = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) ([stackElement] ++ xs) stacks
+-- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Apply func parameters), env):xs) stacks
+  | isBound func env sas == True = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup func env) == True = error $ "Apply Statement Error: Var " ++ func ++ " not in scope."
-  | otherwise = (sas, memory, envList, sasList, (((Types.Apply func parameters), env):xs), stacks)
+  | otherwise = (sas, triggerStore, memory, envList, sasList, triggerStoreList, (((Types.Apply func parameters), env):xs), stacks)
   where stackElement = if (Helpers.isClosure val)
                          then if (length parameters) == (length $ Types.procParameters val)
                                 then (Types.procStmt val, Helpers.extendEnvFromClosure val parameters env)
@@ -168,7 +175,7 @@ executeStack sas memory envList sasList (((Types.Apply func parameters), env):xs
                          where val = Helpers.getValue func env sas
 
 -- Thread Statement (Adding a new Stack, for multi stack)
-executeStack sas memory envList sasList (((Types.Thread stmt), env):xs) stacks = executeStack sas memory (envList ++ [env]) (sasList ++ [sas]) xs (stacks ++ [[(stmt, env)]])
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Thread stmt), env):xs) stacks = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs (stacks ++ [[(stmt, env)]])
 
 -- Error Case (Redundant for now)
 -- executeStack sas memory envList stack stacks = (sas, memory, envList, stack, stacks)

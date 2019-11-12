@@ -14,6 +14,7 @@ module Types
    MemoryToEqClassMap,
    EqClassToValueMap,
    SingleAssignmentStore,
+   TriggerStore,
    MemoryList,
    StackElement,
    Stack) where
@@ -32,6 +33,8 @@ type MemoryToEqClassMap = Map.Map Memory Memory
 type EqClassToValueMap  = Map.Map Memory Value
 
 type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
+
+type TriggerStore = Map.Map Memory Value
 
 type MemoryList = [Memory]
 
