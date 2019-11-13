@@ -5,8 +5,10 @@ module Helpers
    isRec,
    isClosure,
    isRecord,
+   isProc,
    getValue,
    matchPattern,
+   addNewTrigger,
    extendEnvFromPattern,
    extendEnvFromClosure,
    updateOldEquivalenceClass,
@@ -42,6 +44,12 @@ isClosure _ = False
 isRecord :: Types.ValuesRead -> Bool
 isRecord (Types.Record _ _) = True
 isRecord _ = False
+
+-- Special for ValuesRead Type, 
+-- isRecord informs whether a Read value is a Record
+isProc :: Types.ValuesRead -> Bool
+isProc (Types.Proc _ _) = True
+isProc _ = False
 
 -- ####################################################################################################
 
@@ -182,5 +190,12 @@ getVariablesInValuesRead (Types.Expr exp) = getVariablesInExpression exp
 
 updateOldEquivalenceClass :: Types.Memory -> Types.Memory -> Types.MemoryToEqClassMap -> Types.MemoryToEqClassMap
 updateOldEquivalenceClass oldValue newValue eqMap = Map.map (\x -> if x == oldValue then newValue else x) eqMap
+
+addNewTrigger :: Types.TriggerStore -> Types.Value -> Types.Memory -> Types.SingleAssignmentStore -> Types.TriggerStore
+addNewTrigger triggerStore closureValue x (eqMap, valueMap)
+  | Maybe.isNothing (Map.lookup eqClass triggerStore) = Map.insert eqClass [closureValue] triggerStore
+  | otherwise = Map.insert eqClass updatedValueList triggerStore
+  where eqClass          = Maybe.fromJust (Map.lookup x eqMap)
+        updatedValueList = (Maybe.fromJust (Map.lookup eqClass triggerStore)) ++ [closureValue]
 
 -- ####################################################################################################

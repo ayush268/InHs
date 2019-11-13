@@ -177,5 +177,14 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.A
 -- Thread Statement (Adding a new Stack, for multi stack)
 executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Thread stmt), env):xs) stacks = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs (stacks ++ [[(stmt, env)]])
 
+-- ByNeed Statement (Adding a trigger or a new stack depending on variable being bound)
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.ByNeed dest value), env):xs) stacks
+  | not (Helpers.isProc value) || (length $ Types.params value) /= 1 = error $ "ByNeed Statement: The value provided: " ++ (show value) ++ " is not a valid one-argument procedure."
+  | isBound dest env sas = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs updatedStackList
+  | otherwise            = executeStack sas updatedTriggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
+  where closureValue = Helpers.convertValuesReadToValue value env sas
+        updatedStackList = stacks ++ [[(Types.procStmt closureValue, Helpers.extendEnvFromClosure closureValue [dest] env)]]
+        updatedTriggerStore = Helpers.addNewTrigger triggerStore closureValue (Maybe.fromJust (Map.lookup dest env)) sas
+
 -- Error Case (Redundant for now)
--- executeStack sas memory envList stack stacks = (sas, memory, envList, stack, stacks)
+-- executeStack sas triggerStore memory envList sasList triggerStoreList stack stacks = (sas, triggerStore, memory, envList, sasList, triggerStoreList, stack, stacks)

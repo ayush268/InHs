@@ -34,7 +34,7 @@ type EqClassToValueMap  = Map.Map Memory Value
 
 type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
 
-type TriggerStore = Map.Map Memory Value
+type TriggerStore = Map.Map Memory [Value]
 
 type MemoryList = [Memory]
 
@@ -63,7 +63,9 @@ data Statement = Skip
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]}
-                 | Thread {stmt :: Statement} deriving (Eq, Show, Read)
+                 | Thread {stmt :: Statement}
+                 | ByNeed {dest :: Identifier,
+                           value :: ValuesRead} deriving (Eq, Show, Read)
 
 data Expression = Lit {val :: Literal}
                   | Variable {expVar :: Identifier}
