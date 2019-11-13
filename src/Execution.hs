@@ -8,12 +8,14 @@ module Execution
   (threadScheduler) where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 
 import qualified Types
 import qualified Helpers
 import qualified SingleAssignmentStore as SAS
+import qualified TriggerStore as TS
 
 -- Checks whether a variable is bound to a Value in the SAS or not
 -- Returns False if the variable does not exist in the environment or
@@ -77,19 +79,21 @@ getSuspendedVar _                                  = ""
 
 -- The updateSuspendedState will update the Stack State of all the Stacks for which the variable (on which they were suspended) is not bound in the SAS,
 -- It will only change the state of Suspended stacks, others are left as it is.
--- TODO
 updateSuspendedState :: Types.SingleAssignmentStore -> Types.TriggerStore -> [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)] -> (Types.TriggerStore, [(Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)])
-updateSuspendedState sas triggerStore stackList = (triggerStore, map (stateChangeFunc sas) stackList)
+updateSuspendedState sas triggerStore stackList = (updatedTriggerStore, updatedStateStackList ++ newStackTuples)
+  where updatedStateStackList = map (stateChangeFunc sas) stackList
+        (updatedTriggerStore, newStackTuples) = TS.activateTriggers sas triggerStore listOfSuspendedAddresses
+        listOfSuspendedAddresses = map (\(stack,_,_,_,_,var) -> Maybe.fromJust (Map.lookup var (snd $ head stack))) $ filter (\(_,state,_,_,_,_) -> state == Types.Suspended) updatedStateStackList
 
 -- The stateChangeFunc is just a helper function for the Map used above,
 -- The working is trivial, if State of Stack is Suspended and variable (on which it is suspended) is bound, then update it else do nothing.
--- TODO
 stateChangeFunc :: Types.SingleAssignmentStore -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier) -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], Types.Identifier)
 stateChangeFunc sas (stack, state, envList, sasList, triggerStoreList, var)
   | state == Types.Suspended = if (isBound var (snd $ head stack) sas)
                                  then (stack, Types.Ready, envList, sasList, triggerStoreList, "")
                                  else (stack, state, envList, sasList, triggerStoreList, var)
   | otherwise                = (stack, state, envList, sasList, triggerStoreList, var)
+
 
 -- ####################################################################################################
 
@@ -184,7 +188,7 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.B
   | otherwise            = executeStack sas updatedTriggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
   where closureValue = Helpers.convertValuesReadToValue value env sas
         updatedStackList = stacks ++ [[(Types.procStmt closureValue, Helpers.extendEnvFromClosure closureValue [dest] env)]]
-        updatedTriggerStore = Helpers.addNewTrigger triggerStore closureValue (Maybe.fromJust (Map.lookup dest env)) sas
+        updatedTriggerStore = TS.addNewTrigger triggerStore closureValue (Maybe.fromJust (Map.lookup dest env))
 
 -- Error Case (Redundant for now)
 -- executeStack sas triggerStore memory envList sasList triggerStoreList stack stacks = (sas, triggerStore, memory, envList, sasList, triggerStoreList, stack, stacks)

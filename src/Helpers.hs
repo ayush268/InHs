@@ -8,7 +8,6 @@ module Helpers
    isProc,
    getValue,
    matchPattern,
-   addNewTrigger,
    extendEnvFromPattern,
    extendEnvFromClosure,
    updateOldEquivalenceClass,
@@ -190,12 +189,5 @@ getVariablesInValuesRead (Types.Expr exp) = getVariablesInExpression exp
 
 updateOldEquivalenceClass :: Types.Memory -> Types.Memory -> Types.MemoryToEqClassMap -> Types.MemoryToEqClassMap
 updateOldEquivalenceClass oldValue newValue eqMap = Map.map (\x -> if x == oldValue then newValue else x) eqMap
-
-addNewTrigger :: Types.TriggerStore -> Types.Value -> Types.Memory -> Types.SingleAssignmentStore -> Types.TriggerStore
-addNewTrigger triggerStore closureValue x (eqMap, valueMap)
-  | Maybe.isNothing (Map.lookup eqClass triggerStore) = Map.insert eqClass [closureValue] triggerStore
-  | otherwise = Map.insert eqClass updatedValueList triggerStore
-  where eqClass          = Maybe.fromJust (Map.lookup x eqMap)
-        updatedValueList = (Maybe.fromJust (Map.lookup eqClass triggerStore)) ++ [closureValue]
 
 -- ####################################################################################################
