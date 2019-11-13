@@ -223,6 +223,27 @@ main = do
     let p138 = Types.Var s1 p137
     let p139 = Types.Var "F" p138
 
+    -- TestCase 21
+    -- ByNeed Statement (trigger activated by a variable being bound)
+    let p140 = Types.BindValue "m" $ Types.Expr $ Types.Lit 3
+    let p141 = Types.BindValue "n" $ Types.Expr $ Types.Lit 2
+    let p142 = Types.ByNeed "x" $ Types.Proc ["a"] (Types.BindValue "a" $ Types.Record 12 $ Map.fromList [(1,"y"), (2,"m")])
+    let p143 = Types.ByNeed "x" $ Types.Proc ["b"] (Types.BindValue "b" $ Types.Record 12 $ Map.fromList [(1,"n"), (2,"z")])
+    let p144 = Types.BindValue "x" $ Types.Record 12 $ Map.fromList [(1,"y"), (2,"z")]
+    let p145 = Types.Var "x" $ Types.Var "y" $ Types.Var "z" $ Types.Var "m" $ Types.Var "n" $ Types.Multiple [p140, p141, p142, p143, p144]
+
+    -- TestCase 22
+    -- ByNeed Statement (trigger activated by a suspendable statement)
+    let p146 = Types.ByNeed "x" $ Types.Proc ["a"] (Types.BindValue "a" $ Types.Expr $ Types.Lit 0)
+    let p147 = Types.Conditional "x" (Types.BindValue "y" $ Types.Expr $ Types.Lit 1) (Types.BindValue "y" $ Types.Expr $ Types.Lit 2)
+    let p148 = Types.Var "x" $ Types.Var "y" $ Types.Multiple [p146, p147]
+
+    -- TestCase 23
+    -- ByNeed Statement (trigger NOT activated)
+    let p149 = Types.ByNeed "x" $ Types.Proc ["a"] (Types.BindValue "a" $ Types.Expr $ Types.Lit 2)
+    let p150 = Types.BindIdent "x" "y"
+    let p151 = Types.Var "x" $ Types.Var "y" $ Types.Multiple [p149, p150]
+
     -- ################################# NEGATIVE CASES #################################
     --
     -- TestCase 1
@@ -326,6 +347,15 @@ main = do
     let n68 = Types.Var s2 n67
     let n69 = Types.Var s1 n68
 
+    -- TestCase 11
+    -- ByNeed Statement trigger activated and Unification error
+    let n70 = Types.ByNeed "x" $ Types.Proc ["a"] (Types.BindValue "a" $ Types.Expr $ Types.Lit 2)
+    let n71 = Types.BindIdent "x" "y"
+    let n72 = Types.BindValue "y" $ Types.Expr $ Types.Lit 4
+    let n73 = Types.Multiple [n70, n71, n72]
+    let n74 = Types.Var "y" n73
+    let n75 = Types.Var "x" n74
+
     putStrLn "\n\n"
 
     -- ###################################################################
@@ -339,163 +369,233 @@ main = do
     putStrLn "###################################################################"
     
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p5
+    let (a, b, c, d, e) = Ex.executeProgram p5
     print p5
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p8
+    let (a, b, c, d, e) = Ex.executeProgram p8
     print p8
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p13
+    let (a, b, c, d, e) = Ex.executeProgram p13
     print p13
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p19
+    let (a, b, c, d, e) = Ex.executeProgram p19
     print p19
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p25
+    let (a, b, c, d, e) = Ex.executeProgram p25
     print p25
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p29
+    let (a, b, c, d, e) = Ex.executeProgram p29
     print p29
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p31
+    let (a, b, c, d, e) = Ex.executeProgram p31
     print p31
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p36
+    let (a, b, c, d, e) = Ex.executeProgram p36
     print p36
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p45
+    let (a, b, c, d, e) = Ex.executeProgram p45
     print p45
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p52
+    let (a, b, c, d, e) = Ex.executeProgram p52
     print p52
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p59
+    let (a, b, c, d, e) = Ex.executeProgram p59
     print p59
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p68
+    let (a, b, c, d, e) = Ex.executeProgram p68
     print p68
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p77
+    let (a, b, c, d, e) = Ex.executeProgram p77
     print p77
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p85
+    let (a, b, c, d, e) = Ex.executeProgram p85
     print p85
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------" 
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p97
+    let (a, b, c, d, e) = Ex.executeProgram p97
     print p97
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
     
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p102
+    let (a, b, c, d, e) = Ex.executeProgram p102
     print p102
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p109
+    let (a, b, c, d, e) = Ex.executeProgram p109
     print p109
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p114
+    let (a, b, c, d, e) = Ex.executeProgram p114
     print p114
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p122
+    let (a, b, c, d, e) = Ex.executeProgram p122
     print p122
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram p139
+    let (a, b, c, d, e) = Ex.executeProgram p139
     print p139
-    print y
-    print z
-    print x
+    print a
+    print b
+    print c
+    print d
+    print e
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram p145
+    print p145
+    print a
+    print b
+    print c
+    print d
+    print e
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram p148
+    print p148
+    print a
+    print b
+    print c
+    print d
+    print e
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram p151
+    print p151
+    print a
+    print b
+    print c
+    print d
+    print e
     putStrLn "-----------------------PASSED---------------------------"
 
     putStrLn "\n\n"
@@ -508,90 +608,121 @@ main = do
     
     -- Failure Case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n4
+    let (a, b, c, d, e) = Ex.executeProgram n4
     print n4
-    print y
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------" 
 
     -- Failure Case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n10
+    let (a, b, c, d, e) = Ex.executeProgram n10
     print n10
-    print y
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------" 
 
     -- Failure Case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n19
+    let (a, b, c, d, e) = Ex.executeProgram n19
     print n19
-    print y
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------" 
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n28
+    let (a, b, c, d, e) = Ex.executeProgram n28
     print n28
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n35
+    let (a, b, c, d, e) = Ex.executeProgram n35
     print n35
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n40
+    let (a, b, c, d, e) = Ex.executeProgram n40
     print n40
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n46
+    let (a, b, c, d, e) = Ex.executeProgram n46
     print n46
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n52
+    let (a, b, c, d, e) = Ex.executeProgram n52
     print n52
-    print y
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n57
+    let (a, b, c, d, e) = Ex.executeProgram n57
     print n57
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
 
     -- Failure case
     putStrLn "\n\n"
-    let (x, _, y, z, _) = Ex.executeProgram n69
+    let (a, b, c, d, e) = Ex.executeProgram n69
     print n69
-    Control.Exception.catch (print y) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print z) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
-    Control.Exception.catch (print x) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    putStrLn "-----------------------PASSED---------------------------"
+
+    -- Failure case
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram n75
+    print n75
+    Control.Exception.catch (print a) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print b) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print c) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print d) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
+    Control.Exception.catch (print e) (\msg -> putStrLn $ "Caught " ++ show (msg::Control.Exception.SomeException))
     putStrLn "-----------------------PASSED---------------------------"
