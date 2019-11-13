@@ -53,7 +53,9 @@ data Statement = Skip
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]}
-                 | Thread {stmt :: Statement} deriving (Eq, Show, Read)
+                 | Thread {stmt :: Statement}
+                 | ByNeed {dest :: Identifier,
+                           value :: ValuesRead} deriving (Eq, Show, Read)
 ```
 
 * **StackState** Type (Ready, Suspended, Completed), for Concurreny
@@ -101,6 +103,12 @@ data Operator = Add | Sub | Mult | Div deriving (Eq, Show, Read)
 ---
 
 ## Examples
+
+- Lazy Program (ByNeed Statement which creates a trigger for a variable and it is activated on encountering a suspended statement), this corresponds to *Positive TestCase 22*.
+
+``` Haskell
+Var {dest = "x", stmt = Var {dest = "y", stmt = Multiple {stmts = [ByNeed {dest = "x", value = Proc {params = ["a"], pStmt = BindValue {dest = "a", value = Expr {expr = Lit {val = 0}}}}},Conditional {src = "x", fststmt = BindValue {dest = "y", value = Expr {expr = Lit {val = 1}}}, sndstmt = BindValue {dest = "y", value = Expr {expr = Lit {val = 2}}}}]}}}
+```
 
 - Concurrent Program (Thread Statement which binds the variable *alice* for Conditional suspendable statements), this corresponds to *Positive TestCase 19*.
 
@@ -163,6 +171,9 @@ We have divided the test-suite into 2 classes, namely **Positive** and **Negativ
 | 18 | Thread Statement (without Suspend Case) | Passed |
 | 19 | Thread Statement (with Suspension of Conditional Statement) | Passed |
 | 20 | Multiple Threads (Depending on one another, suspension goes back and forth) | Passed |
+| 21 | ByNeed Statement (trigger activated by a variable being bound) | Passed |
+| 22 | ByNeed Statement (trigger activated by a suspendable statement) | Passed |
+| 23 | ByNeed Statement (trigger NOT activated) | Passed |
 
 ### Negative Test Cases (Raising Exceptions)
 |S No|__Test Description__|__Result__|
@@ -177,6 +188,7 @@ We have divided the test-suite into 2 classes, namely **Positive** and **Negativ
 |8|Evaluating Expressions Fails (one operand not bound to a value)|Passed|
 |9|Single suspendable Statement Failure Case|Passed|
 |10|Multiple Statements Suspended on each other (Conditional, Match and Apply)|Passed|
+|11|ByNeed Statement trigger activated and Unification error|Passed|
 
 ---
 
@@ -195,6 +207,7 @@ The interpreter requires input in AST format. Here is a brief specification of h
 | case \<x\> of \<p1\> then \<s\>1 else \<s\>2 end | [match ident(x) p1 s1 s2] | Match { src = "x", pattern = `Record`, fststmt = `Statement`, sndstmt = `Statement` } |
 | {F X1 ... Xn} | [apply ident(f) ident(x1) ... ident(xn)] | Apply { func = "F", parameters = ["X1", ... , "Xn"] } |
 | thread \<s\> end | [Thread s] | Thread { stmt = `Statement` } |
+| ByNeed \<p\> \<x\> end | [ByNeed p x] | ByNeed { dest = "x", value = `ValuesRead` } |
 
 The Specification for each of the Records and Value types can be found in [Examples](#examples) section.
 
@@ -213,18 +226,19 @@ The Specification for each of the Records and Value types can be found in [Examp
 │   ├── Execution.hs
 │   ├── Helpers.hs
 │   ├── SingleAssignmentStore.hs
+│   ├── TriggerStore.hs
 │   └── Types.hs
 ├── stack.yaml
 ├── stack.yaml.lock
 └── test
     └── Spec.hs
-
 ```
 
 * `ExecuteProgram.hs`: Main program. Calls `threadScheduler` which picks a READY stack and calls `executeStack` which defines operations of the abstract machine depending on the type of statement.
 * `Execution.hs`: All the functions related to Threading, Context Switch and Execution Semantics of each statement and stack are defined here, they in turn call functions from different modules.
 * `Helpers.hs` : Set of helper functions to convert `ValuesRead` type to `Value` type or retrieve values from SAS or free variables from a procedure value and many more.
 * `SingleAssignmentStore.hs` : This is where the MAGIC happens, it implements the code for SAS and UNIFICATION Algorithm for literals, records and values.
+* `TriggerStore.hs`: This is the where Laziness feature comes from, `ByNeed` statement creates a trigger in this store and it is activated when the variable is really needed.
 * `Types.hs` : Defines all the types and typeclasses used in the project. Brief intro
 is given in the [Type Specification](#type-specification) section.
 
