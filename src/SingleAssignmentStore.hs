@@ -28,10 +28,11 @@ addVariable sas memory = (((Map.insert var eqClass eqMap), (valueMap)), updatedM
         updatedMemoryList = drop 2 memory
 
 -- bindValue binds a memory address (is SAS) to a valid Value, converted from a read Value
-bindValue :: Types.SingleAssignmentStore -> Types.Memory -> Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore
+bindValue :: Types.SingleAssignmentStore -> Types.Memory -> Types.ValuesRead -> Types.EnvironmentMap -> Maybe Types.SingleAssignmentStore
 bindValue (eqMap, valueMap) x value env
-  | Maybe.isNothing (Map.lookup eqX valueMap) = (eqMap, (Map.insert eqX newValue valueMap))
-  | otherwise = unifyValue (eqMap, valueMap) x newValue
+  | Maybe.isNothing newValue = Nothing
+  | Maybe.isNothing (Map.lookup eqX valueMap) = Just (eqMap, (Map.insert eqX (Maybe.fromJust newValue) valueMap))
+  | otherwise = Just $ unifyValue (eqMap, valueMap) x (Maybe.fromJust newValue)
   where eqX = Maybe.fromJust (Map.lookup x eqMap)
         newValue = Helpers.convertValuesReadToValue value env (eqMap, valueMap)
 

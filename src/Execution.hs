@@ -60,7 +60,7 @@ contextSwitchAndExecute sas triggerStore memory stack envList sasList triggerSto
   | (null updatedStack) && (not $ null newStacksToAdd) = (updatedSas, updatedTriggerStore, updatedMemory, newStackTuples ++ [(updatedStack, Types.Completed, updatedEnvList, updatedSasList, updatedTriggerStoreList, "")])
   | otherwise                                          = (updatedSas, updatedTriggerStore, updatedMemory, newStackTuples ++ [(updatedStack, Types.Suspended, updatedEnvList, updatedSasList, updatedTriggerStoreList, suspendedOn)])
   where (updatedSas, updatedTriggerStore, updatedMemory, updatedEnvList, updatedSasList, updatedTriggerStoreList, updatedStack, newStacksToAdd) = executeStack sas triggerStore memory envList sasList triggerStoreList stack []
-        suspendedOn = getSuspendedVar $ head updatedStack
+        suspendedOn = getSuspendedVar (head updatedStack) updatedSas
         newStackTuples = map (\stack -> (stack, Types.Ready, [], [], [], "")) newStacksToAdd
 
 -- ####################################################################################################
@@ -71,11 +71,18 @@ contextSwitchAndExecute sas triggerStore memory stack envList sasList triggerSto
 -- ####################################################################################################
 
 -- getSuspendedVar returns the Identifier on which the stack is suspended
-getSuspendedVar :: Types.StackElement -> Types.Identifier
-getSuspendedVar ((Types.Conditional src _ _), env) = src
-getSuspendedVar ((Types.Match src _ _ _), env)     = src
-getSuspendedVar ((Types.Apply src _), env)         = src
-getSuspendedVar _                                  = ""
+getSuspendedVar :: Types.StackElement -> Types.SingleAssignmentStore -> Types.Identifier
+getSuspendedVar ((Types.BindValue _ value), env) sas   = getSuspendedVarInExpression value env sas
+getSuspendedVar ((Types.Conditional src _ _), env) sas = src
+getSuspendedVar ((Types.Match src _ _ _), env) sas     = src
+getSuspendedVar ((Types.Apply src _), env) sas         = src
+getSuspendedVar _ _                                    = ""
+
+getSuspendedVarInExpression :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Identifier
+getSuspendedVarInExpression (Types.Expr exp) env sas
+  | (Types.Exp _ l r) <- exp = if ((getSuspendedVarInExpression (Types.Expr l) env sas) == "") then (getSuspendedVarInExpression (Types.Expr r) env sas) else (getSuspendedVarInExpression (Types.Expr l) env sas)
+  | (Types.Variable var) <- exp = if (isBound var env sas) then "" else var
+  | otherwise = ""
 
 -- The updateSuspendedState will update the Stack State of all the Stacks for which the variable (on which they were suspended) is not bound in the SAS,
 -- It will only change the state of Suspended stacks, others are left as it is.
@@ -122,7 +129,6 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.V
         stackElement                = (stmt, updatedEnv)
 
 -- BindIdent Statements
--- TODO (update trigger store and if variable is bound then add a new stack)
 executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.BindIdent dest src), env):xs) stacks = executeStack updatedSas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
   where updatedSas = if (Maybe.isNothing (Map.lookup dest env)) || (Maybe.isNothing (Map.lookup src env))
                        then error $ "Bind Identifier Statement Error: Var " ++ dest ++ " OR Var " ++ src ++ " not in scope."
@@ -131,12 +137,14 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.B
                                y = Maybe.fromJust (Map.lookup src env)
 
 -- BindValue Statements
--- TODO (update trigger store and if variable is bound, even to a record, then add a new stack)
-executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.BindValue dest value), env):xs) stacks = executeStack updatedSas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
-  where updatedSas = if (Maybe.isNothing (Map.lookup dest env))
+-- Suspend in case variable is not bound (for expression value)
+executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.BindValue dest value), env):xs) stacks
+  | Maybe.isJust maybeUpdatedSas = executeStack updatedSas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
+  | otherwise = (sas, triggerStore, memory, envList, sasList, triggerStoreList, (((Types.BindValue dest value), env):xs), stacks)
+  where maybeUpdatedSas = SAS.bindValue sas (Maybe.fromJust (Map.lookup dest env)) value env
+        updatedSas = if (Maybe.isNothing (Map.lookup dest env))
                        then error $ "Bind Value Statement Error: Var " ++ dest ++ " not in scope."
-                       else SAS.bindValue sas x value env
-                         where x = Maybe.fromJust (Map.lookup dest env)
+                       else Maybe.fromJust maybeUpdatedSas
 
 -- Conditional Statement
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
@@ -149,7 +157,7 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.C
                                 then (fststmt, env)
                                 else (sndstmt, env)
                          else error $ "The type of variable " ++ src ++ " should be a literal."
-                         where val = Helpers.getValue src env sas
+                         where val = Maybe.fromJust $ Helpers.getValue src env sas
 
 -- Match Statement
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
@@ -162,7 +170,7 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.M
                                 then (fststmt, Helpers.extendEnvFromPattern val pattern env)
                                 else (sndstmt, env)
                          else error $ "The type of variables " ++ src ++ " and Pattern: " ++ (show pattern) ++ " should be record."
-                         where val = Helpers.getValue src env sas
+                         where val = Maybe.fromJust $ Helpers.getValue src env sas
 
 -- Apply Statement (Procedure Application)
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
@@ -176,7 +184,7 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.A
                                 else error $ "The function/procedure call " ++ func ++ " lists " ++ (show $ length parameters) ++
                                      " parameters but closure lists " ++ (show $ length $ Types.procParameters val) ++ " parameters."
                          else error $ "The type of variable " ++ func ++ " should be a closure/procedure."
-                         where val = Helpers.getValue func env sas
+                         where val = Maybe.fromJust $ Helpers.getValue func env sas
 
 -- Thread Statement (Adding a new Stack, for multi stack)
 executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.Thread stmt), env):xs) stacks = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs (stacks ++ [[(stmt, env)]])
@@ -186,7 +194,7 @@ executeStack sas triggerStore memory envList sasList triggerStoreList (((Types.B
   | not (Helpers.isProc value) || (length $ Types.params value) /= 1 = error $ "ByNeed Statement: The value provided: " ++ (show value) ++ " is not a valid one-argument procedure."
   | isBound dest env sas = executeStack sas triggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs updatedStackList
   | otherwise            = executeStack sas updatedTriggerStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) xs stacks
-  where closureValue = Helpers.convertValuesReadToValue value env sas
+  where closureValue = Maybe.fromJust $ Helpers.convertValuesReadToValue value env sas
         updatedStackList = stacks ++ [[(Types.procStmt closureValue, Helpers.extendEnvFromClosure closureValue [dest] env)]]
         updatedTriggerStore = TS.addNewTrigger triggerStore closureValue (Maybe.fromJust (Map.lookup dest env))
 

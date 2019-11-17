@@ -59,10 +59,10 @@ isProc _ = False
 
 -- getValue checks if the identifier is bound in SAS or not,
 -- If its bound, then returns its value else raises an Exception
-getValue :: Types.Identifier -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Value
-getValue src env (eqMap, valueMap) = if (Maybe.isJust var) && (Maybe.isJust eqClass) && (Maybe.isJust val)
-                                       then (Maybe.fromJust val)
-                                       else error $ "Variable " ++ src ++ " either not in scope or not bound to a value."
+getValue :: Types.Identifier -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Maybe Types.Value
+getValue src env (eqMap, valueMap) = if (Maybe.isJust var) && (Maybe.isJust eqClass)
+                                       then val
+                                       else error $ "Variable " ++ src ++ " either not in scope."
   where var = Map.lookup src env
         eqClass = Map.lookup (Maybe.fromJust var) eqMap
         val = Map.lookup (Maybe.fromJust eqClass) valueMap
@@ -120,30 +120,28 @@ extendEnvFromClosure _ _ env = env
 -- convertExpressionToValue takes an expression (read from input),
 -- and converts to a Literal Value (using values stored in SAS and Env)
 -- and doing computation
-convertExpressionToValue :: Types.Expression -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Value
-convertExpressionToValue (Types.Lit x) env sas = Types.Liter x
+convertExpressionToValue :: Types.Expression -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Maybe Types.Value
+convertExpressionToValue (Types.Lit x) env sas = Just $ Types.Liter x
 
-convertExpressionToValue (Types.Variable x) env sas = if (isLit val)
-                                                        then val
-                                                        else error $ "Variable: " ++ x ++ " should be bound to a literal value in the expression."
-  where val = getValue x env sas
+convertExpressionToValue (Types.Variable x) env sas = getValue x env sas
 
 convertExpressionToValue (Types.Exp op left right) env sas
-  | op == Types.Add  = Types.Liter $ leftValue + rightValue
-  | op == Types.Sub  = Types.Liter $ leftValue - rightValue
-  | op == Types.Mult = Types.Liter $ leftValue * rightValue
-  | op == Types.Div  = Types.Liter $ leftValue `div` rightValue
-  where leftValue  = Types.litVal $ convertExpressionToValue left env sas
-        rightValue = Types.litVal $ convertExpressionToValue right env sas
+  | (Maybe.isNothing leftValue) || (Maybe.isNothing rightValue) = Nothing
+  | op == Types.Add  = Just $ Types.Liter $ (Types.litVal $ Maybe.fromJust leftValue) + (Types.litVal $ Maybe.fromJust rightValue)
+  | op == Types.Sub  = Just $ Types.Liter $ (Types.litVal $ Maybe.fromJust leftValue) - (Types.litVal $ Maybe.fromJust rightValue)
+  | op == Types.Mult = Just $ Types.Liter $ (Types.litVal $ Maybe.fromJust leftValue) * (Types.litVal $ Maybe.fromJust rightValue)
+  | op == Types.Div  = Just $ Types.Liter $ (Types.litVal $ Maybe.fromJust leftValue) `div` (Types.litVal $ Maybe.fromJust rightValue)
+  where leftValue  = convertExpressionToValue left env sas
+        rightValue = convertExpressionToValue right env sas
 
 -- convertValuesReadToValue reads an input expression or Value and converts it,
 -- to an appropriate Literal / Record or Closure to be stored in SAS.
-convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Value
-convertValuesReadToValue (Types.Record l m) env _ = Types.Rec l valueMap
+convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Maybe Types.Value
+convertValuesReadToValue (Types.Record l m) env _ = Just $ Types.Rec l valueMap
   where valueMap = Map.map getBindingVar m
           where getBindingVar x = Maybe.fromJust (Map.lookup x env)
 
-convertValuesReadToValue (Types.Proc p s) env _ = Types.Closure p s closureEnv
+convertValuesReadToValue (Types.Proc p s) env _ = Just $ Types.Closure p s closureEnv
   where closureEnv = Map.restrictKeys env freeVariables
           where freeVariables = Set.difference variablesInProc (Set.fromList p)
                   where variablesInProc = getVariablesInStatement s
