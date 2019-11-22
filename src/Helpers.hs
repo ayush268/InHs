@@ -170,7 +170,12 @@ getVariablesInStatement (Types.Multiple x) = foldr Set.union Set.empty (map getV
 getVariablesInStatement (Types.Var x s) = Set.difference (getVariablesInStatement s) (Set.fromList [x])
 getVariablesInStatement (Types.BindIdent x y) = Set.fromList [x, y]
 getVariablesInStatement (Types.BindValue x v) = Set.union (Set.fromList [x]) (getVariablesInValuesRead v)
-getVariablesInStatement _ = Set.empty
+getVariablesInStatement (Types.Conditional x s1 s2) = Set.unions [(Set.fromList [x]), (getVariablesInStatement s1), (getVariablesInStatement s2)]
+getVariablesInStatement (Types.Match x p s1 s2) = Set.unions [(Set.fromList [x]), (getVariablesInStatement s2), (Set.difference (getVariablesInStatement s1) (getVariablesInValuesRead p))]
+getVariablesInStatement (Types.Apply x p) = Set.unions (map (\a -> Set.fromList [a]) $ [x]++p)
+getVariablesInStatement (Types.Thread s) = getVariablesInStatement s
+getVariablesInStatement (Types.ByNeed x p) = Set.union (Set.fromList [x]) (getVariablesInValuesRead p)
+-- getVariablesInStatement _ = Set.empty
 
 -- getVariablesInValuesRead gets a read Value and gives set of available variables
 getVariablesInValuesRead :: Types.ValuesRead -> Set.Set Types.Identifier
