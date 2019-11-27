@@ -244,6 +244,28 @@ main = do
     let p150 = Types.BindIdent "x" "y"
     let p151 = Types.Var "x" $ Types.Var "y" $ Types.Multiple [p149, p150]
 
+    -- TestCase 24
+    -- Normal (Eager) Factorial Function
+    let p152 = Types.Multiple [(Types.BindValue "s" $ Types.Expr $ Types.Exp Types.Sub (Types.Variable "n") (Types.Lit 1)), (Types.Apply "fact" ["s","t"]), (Types.BindValue "a" $ Types.Expr $ Types.Exp Types.Mult (Types.Variable "n") (Types.Variable "t"))]
+    let p153 = Types.BindValue "a" $ Types.Expr $ Types.Lit 1
+    let p154 = Types.Conditional "n" p152 p153
+    let p155 = Types.Var "s" $ Types.Var "t" p154
+    let p156 = Types.BindValue "fact" $ Types.Proc ["n", "a"] p155
+    let p157 = Types.Multiple [p156, (Types.BindValue "input" $ Types.Expr $ Types.Lit 10), (Types.Apply "fact" ["input", "x"]), (Types.BindValue "y" $ Types.Expr $ Types.Exp Types.Add (Types.Variable "x") (Types.Lit 0))]
+    let p158 = Types.Var "y" $ Types.Var "x" $ Types.Var "fact" $ Types.Var "input" p157
+
+
+    -- TestCase 25
+    -- Lazy Factorial Function
+    let p159 = Types.Multiple [(Types.BindValue "s" $ Types.Expr $ Types.Exp Types.Sub (Types.Variable "n") (Types.Lit 1)), (Types.Apply "fact" ["s","t"]), (Types.BindValue "a" $ Types.Expr $ Types.Exp Types.Mult (Types.Variable "n") (Types.Variable "t"))]
+    let p160 = Types.BindValue "a" $ Types.Expr $ Types.Lit 1
+    let p161 = Types.Conditional "n" p159 p160
+    let p162 = Types.ByNeed "a" $ Types.Proc ["b"] p161
+    let p163 = Types.Var "s" $ Types.Var "t" p162
+    let p164 = Types.BindValue "fact" $ Types.Proc ["n", "a"] p163
+    let p165 = Types.Multiple [p164, (Types.BindValue "input" $ Types.Expr $ Types.Lit 10), (Types.Apply "fact" ["input", "x"]), (Types.BindValue "y" $ Types.Expr $ Types.Exp Types.Add (Types.Variable "x") (Types.Lit 0))]
+    let p166 = Types.Var "y" $ Types.Var "x" $ Types.Var "fact" $ Types.Var "input" p165
+
     -- ################################# NEGATIVE CASES #################################
     --
     -- TestCase 1
@@ -591,6 +613,26 @@ main = do
     putStrLn "\n\n"
     let (a, b, c, d, e) = Ex.executeProgram p151
     print p151
+    print a
+    print b
+    print c
+    print d
+    print e
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram p158
+    print p158
+    print a
+    print b
+    print c
+    print d
+    print e
+    putStrLn "-----------------------PASSED---------------------------"
+
+    putStrLn "\n\n"
+    let (a, b, c, d, e) = Ex.executeProgram p166
+    print p166
     print a
     print b
     print c

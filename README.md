@@ -174,6 +174,8 @@ We have divided the test-suite into 2 classes, namely **Positive** and **Negativ
 | 21 | ByNeed Statement (trigger activated by a variable being bound) | Passed |
 | 22 | ByNeed Statement (trigger activated by a suspendable statement) | Passed |
 | 23 | ByNeed Statement (trigger NOT activated) | Passed |
+| 24 | Eager Factorial Function (Recursion) | Passed |
+| 25 | Lazy Factorial Function (Recursion with Laziness) | Passed |
 
 ### Negative Test Cases (Raising Exceptions)
 |S No|__Test Description__|__Result__|
