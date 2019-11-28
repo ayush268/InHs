@@ -18,19 +18,6 @@ import qualified SingleAssignmentStore as SAS
 import qualified TriggerStore as TS
 import qualified MutableStore as MS
 
--- Checks whether a variable is bound to a Value in the SAS or not
--- Returns False if the variable does not exist in the environment or
--- is not bound to a value.
-isBound :: Types.Identifier -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Bool
-isBound src env (eqMap, valueMap)
-  | (Maybe.isJust $ Map.lookup src env) == True = if (Maybe.isJust eqClass)
-                                                    then (Maybe.isJust $ Map.lookup (Maybe.fromJust eqClass) valueMap)
-                                                    else False
-  | otherwise = False
-  where var = Map.lookup src env
-        eqClass = Map.lookup (Maybe.fromJust var) eqMap
-
-
 -- ####################################################################################################
 -- Threading functions (for new threads and context switching between READY threads)
 -- ####################################################################################################
@@ -82,7 +69,7 @@ getSuspendedVar _ _                                    = ""
 getSuspendedVarInExpression :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Types.Identifier
 getSuspendedVarInExpression (Types.Expr exp) env sas
   | (Types.Exp _ l r) <- exp = if ((getSuspendedVarInExpression (Types.Expr l) env sas) == "") then (getSuspendedVarInExpression (Types.Expr r) env sas) else (getSuspendedVarInExpression (Types.Expr l) env sas)
-  | (Types.Variable var) <- exp = if (isBound var env sas) then "" else var
+  | (Types.Variable var) <- exp = if (Helpers.isBound var env sas) then "" else var
   | otherwise = ""
 
 -- The updateSuspendedState will update the Stack State of all the Stacks for which the variable (on which they were suspended) is not bound in the SAS,
@@ -97,7 +84,7 @@ updateSuspendedState sas triggerStore stackList = (updatedTriggerStore, updatedS
 -- The working is trivial, if State of Stack is Suspended and variable (on which it is suspended) is bound, then update it else do nothing.
 stateChangeFunc :: Types.SingleAssignmentStore -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], [Types.MutableStore], Types.Identifier) -> (Types.Stack, Types.StackState, [Types.EnvironmentMap], [Types.SingleAssignmentStore], [Types.TriggerStore], [Types.MutableStore], Types.Identifier)
 stateChangeFunc sas (stack, state, envList, sasList, triggerStoreList, mutableStoreList, var)
-  | state == Types.Suspended = if (isBound var (snd $ head stack) sas)
+  | state == Types.Suspended = if (Helpers.isBound var (snd $ head stack) sas)
                                  then (stack, Types.Ready, envList, sasList, triggerStoreList, mutableStoreList, "")
                                  else (stack, state, envList, sasList, triggerStoreList, mutableStoreList, var)
   | otherwise                = (stack, state, envList, sasList, triggerStoreList, mutableStoreList, var)
@@ -150,7 +137,7 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
 -- Conditional Statement
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
 executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.Conditional src fststmt sndstmt), env):xs) stacks
-  | isBound src env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
+  | Helpers.isBound src env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup src env) == True = error $ "Conditional Statement Error: Var " ++ src ++ " not in scope."
   | otherwise = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, (((Types.Conditional src fststmt sndstmt), env):xs), stacks)
   where stackElement = if (Helpers.isLit val)
@@ -163,7 +150,7 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
 -- Match Statement
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
 executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.Match src pattern fststmt sndstmt), env):xs) stacks
-  | isBound src env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
+  | Helpers.isBound src env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup src env) == True = error $ "Match Statement Error: Var " ++ src ++ " not in scope."
   | otherwise = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, (((Types.Match src pattern fststmt sndstmt), env):xs), stacks)
   where stackElement = if (Helpers.isRec val) && (Helpers.isRecord pattern)
@@ -176,7 +163,7 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
 -- Apply Statement (Procedure Application)
 -- do nothing with trigger store here, if suspended then will be taken care by updateStackState function
 executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.Apply func parameters), env):xs) stacks
-  | isBound func env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
+  | Helpers.isBound func env sas == True = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) ([stackElement] ++ xs) stacks
   | Maybe.isNothing (Map.lookup func env) == True = error $ "Apply Statement Error: Var " ++ func ++ " not in scope."
   | otherwise = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, (((Types.Apply func parameters), env):xs), stacks)
   where stackElement = if (Helpers.isClosure val)
@@ -193,7 +180,7 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
 -- ByNeed Statement (Adding a trigger or a new stack depending on variable being bound)
 executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.ByNeed dest value), env):xs) stacks
   | not (Helpers.isProc value) || (length $ Types.params value) /= 1 = error $ "ByNeed Statement: The value provided: " ++ (show value) ++ " is not a valid one-argument procedure."
-  | isBound dest env sas = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs updatedStackList
+  | Helpers.isBound dest env sas = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs updatedStackList
   | otherwise            = executeStack sas updatedTriggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs stacks
   where closureValue = Maybe.fromJust $ Helpers.convertValuesReadToValue value env sas
         updatedStackList = stacks ++ [[(Types.procStmt closureValue, Helpers.extendEnvFromClosure closureValue [dest] env)]]
@@ -222,7 +209,7 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
 
 -- Wait Statement (Waiting for the variable to be bound.)
 executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.Wait src), env):xs) stacks
-  | isBound src env sas = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs stacks
+  | Helpers.isBound src env sas = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs stacks
   | Maybe.isNothing (Map.lookup src env) = error $ "Wait Statement Error: Var " ++ src ++ " not in scope."
   | otherwise = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, (((Types.Wait src), env):xs), stacks)
 

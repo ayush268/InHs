@@ -87,7 +87,8 @@ data ValuesRead = Expr {expr :: Expression}
                   | Proc {params :: [Identifier],
                           pStmt   :: Statement}
                   | Record {label  :: Literal,
-                            values :: ReadFeatureMap} deriving (Eq, Show, Read)
+                            values :: ReadFeatureMap}
+                  | IsDet {vsrc :: Identifier} deriving (Eq, Show, Read)
 
 data Value = Liter {litVal :: Literal}
              | Closure {procParameters :: [Identifier],

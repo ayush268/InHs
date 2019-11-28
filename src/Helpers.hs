@@ -6,6 +6,7 @@ module Helpers
    isClosure,
    isRecord,
    isProc,
+   isBound,
    getValue,
    matchPattern,
    extendEnvFromPattern,
@@ -137,6 +138,10 @@ convertExpressionToValue (Types.Exp op left right) env sas
 -- convertValuesReadToValue reads an input expression or Value and converts it,
 -- to an appropriate Literal / Record or Closure to be stored in SAS.
 convertValuesReadToValue :: Types.ValuesRead -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Maybe Types.Value
+convertValuesReadToValue (Types.IsDet x) env sas = if (isBound x env sas)
+                                                     then Just $ Types.Liter 1
+                                                     else Just $ Types.Liter 0
+
 convertValuesReadToValue (Types.Record l m) env _ = Just $ Types.Rec l valueMap
   where valueMap = Map.map getBindingVar m
           where getBindingVar x = Maybe.fromJust (Map.lookup x env)
@@ -192,5 +197,17 @@ getVariablesInValuesRead (Types.Expr exp) = getVariablesInExpression exp
 
 updateOldEquivalenceClass :: Types.Memory -> Types.Memory -> Types.MemoryToEqClassMap -> Types.MemoryToEqClassMap
 updateOldEquivalenceClass oldValue newValue eqMap = Map.map (\x -> if x == oldValue then newValue else x) eqMap
+
+-- Checks whether a variable is bound to a Value in the SAS or not
+-- Returns False if the variable does not exist in the environment or
+-- is not bound to a value.
+isBound :: Types.Identifier -> Types.EnvironmentMap -> Types.SingleAssignmentStore -> Bool
+isBound src env (eqMap, valueMap)
+  | (Maybe.isJust $ Map.lookup src env) == True = if (Maybe.isJust eqClass)
+                                                    then (Maybe.isJust $ Map.lookup (Maybe.fromJust eqClass) valueMap)
+                                                    else False
+  | otherwise = False
+  where var = Map.lookup src env
+        eqClass = Map.lookup (Maybe.fromJust var) eqMap
 
 -- ####################################################################################################
