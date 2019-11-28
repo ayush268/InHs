@@ -220,5 +220,11 @@ executeStack sas triggerStore mutableStore memory envList sasList triggerStoreLi
         portId = Types.name $ Maybe.fromJust $ Map.lookup portEqClass (snd sas)
         msgAddr = Maybe.fromJust $ Map.lookup msg env
 
+-- Wait Statement (Waiting for the variable to be bound.)
+executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList (((Types.Wait src), env):xs) stacks
+  | isBound src env sas = executeStack sas triggerStore mutableStore memory (envList ++ [env]) (sasList ++ [sas]) (triggerStoreList ++ [triggerStore]) (mutableStoreList ++ [mutableStore]) xs stacks
+  | Maybe.isNothing (Map.lookup src env) = error $ "Wait Statement Error: Var " ++ src ++ " not in scope."
+  | otherwise = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, (((Types.Wait src), env):xs), stacks)
+
 -- Error Case (Redundant for now)
 -- executeStack sas triggerStore mutableStore memory envList sasList triggerStoreList mutableStoreList stack stacks = (sas, triggerStore, mutableStore, memory, envList, sasList, triggerStoreList, mutableStoreList, stack, stacks)

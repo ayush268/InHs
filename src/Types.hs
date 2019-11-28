@@ -72,7 +72,8 @@ data Statement = Skip
                  | NewPort {src  :: Identifier,
                             dest :: Identifier}
                  | Send {dest  :: Identifier,
-                         msg :: Identifier} deriving (Eq, Show, Read)
+                         msg :: Identifier}
+                 | Wait {src :: Identifier} deriving (Eq, Show, Read)
 
 data Expression = Lit {val :: Literal}
                   | Variable {expVar :: Identifier}
