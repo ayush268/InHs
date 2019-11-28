@@ -70,7 +70,8 @@ data Statement = Skip
                  | NewPort {src  :: Identifier,
                             dest :: Identifier}
                  | Send {dest  :: Identifier,
-                         msg :: Identifier} deriving (Eq, Show, Read)
+                         msg :: Identifier}
+                 | Wait {src :: Identifier} deriving (Eq, Show, Read)
 ```
 
 * **StackState** Type (Ready, Suspended, Completed), for Concurreny
@@ -92,13 +93,14 @@ data Value = Liter {litVal :: Literal}
 ```
 `Value` type describes how values (data) is stored in the Single Assignment Store, the SAS can only contain data of types Literals (integers), Records or Closures (procedures).
 
-- **ValuesRead** Type (Literal, Record, Closures), **Expressions** and **Operators**.
+- **ValuesRead** Type (Expressions, Procedures, Records and IsDetermined), **Expressions** and **Operators**.
 ``` Haskell
 data ValuesRead = Expr {expr :: Expression}
                   | Proc {params :: [Identifier],
                           pStmt   :: Statement}
                   | Record {label  :: Literal,
-                            values :: ReadFeatureMap} deriving (Eq, Show, Read)
+                            values :: ReadFeatureMap}
+                  | IsDet {vsrc :: Identifier} deriving (Eq, Show, Read)
 
 data Expression = Lit {val :: Literal}
                   | Variable {expVar :: Identifier}
@@ -115,6 +117,7 @@ data Operator = Add | Sub | Mult | Div deriving (Eq, Show, Read)
 * **Expressions**: Evaluated and converted to value literals to store in SAS.
 * **Records**: Map features to the corresponding values in Single Assignment Store.
 * **Closures**: Segregate procedure arguments, procedure statement and free variables.
+* **IsDetermined**: Returns a boolean (literal 1 or 0) is the variable is bound or not respectively.
 
 ---
 
@@ -228,6 +231,7 @@ The interpreter requires input in AST format. Here is a brief specification of h
 | ByNeed \<p\> \<x\> end | [ByNeed p x] | ByNeed { dest = "x", value = `ValuesRead` } |
 | NewPort \<x\> \<port\> end | [NewPort x port] | NewPort { src = "x", dest = "port" } |
 | Send \<port\> \<msg\> end | [Send port msg] | Send { dest = "port", msg = "msg" } |
+| Wait \<x\> | [Wait x] | Wait { src = "x" } |
 
 The Specification for each of the Records and Value types can be found in [Examples](#examples) section.
 
