@@ -175,7 +175,7 @@ getVariablesInStatement (Types.Match x p s1 s2) = Set.unions [(Set.fromList [x])
 getVariablesInStatement (Types.Apply x p) = Set.unions (map (\a -> Set.fromList [a]) $ [x]++p)
 getVariablesInStatement (Types.Thread s) = getVariablesInStatement s
 getVariablesInStatement (Types.ByNeed x p) = Set.union (Set.fromList [x]) (getVariablesInValuesRead p)
--- getVariablesInStatement _ = Set.empty
+getVariablesInStatement _ = Set.empty
 
 -- getVariablesInValuesRead gets a read Value and gives set of available variables
 getVariablesInValuesRead :: Types.ValuesRead -> Set.Set Types.Identifier

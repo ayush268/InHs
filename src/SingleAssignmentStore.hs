@@ -4,7 +4,8 @@
 module SingleAssignmentStore
   (addVariable,
    unifyVariables,
-   bindValue) where
+   bindValue,
+   unifyValue) where
 
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
