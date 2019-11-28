@@ -15,12 +15,13 @@ module Types
    EqClassToValueMap,
    SingleAssignmentStore,
    TriggerStore,
+   MutableStore,
    MemoryList,
    StackElement,
    Stack) where
 
 import qualified Data.Map as Map
-
+import qualified Data.UUID as Uuid
 
 -- Type Synonyms
 type Identifier = String
@@ -35,6 +36,8 @@ type EqClassToValueMap  = Map.Map Memory Value
 type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
 
 type TriggerStore = Map.Map Memory [Value]
+
+type MutableStore = Map.Map Uuid.UUID Memory
 
 type MemoryList = [Memory]
 
@@ -65,7 +68,11 @@ data Statement = Skip
                           parameters :: [Identifier]}
                  | Thread {stmt :: Statement}
                  | ByNeed {dest :: Identifier,
-                           value :: ValuesRead} deriving (Eq, Show, Read)
+                           value :: ValuesRead}
+                 | NewPort {src  :: Identifier,
+                            dest :: Identifier}
+                 | Send {dest  :: Identifier,
+                         msg :: Identifier} deriving (Eq, Show, Read)
 
 data Expression = Lit {val :: Literal}
                   | Variable {expVar :: Identifier}
@@ -86,7 +93,8 @@ data Value = Liter {litVal :: Literal}
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: FeatureMap} deriving (Show, Read)
+                    recValues :: FeatureMap}
+             | Name {name :: Uuid.UUID} deriving (Show, Read)
 
 data StackState = Ready | Suspended | Completed deriving (Eq, Ord, Show, Read)
 
