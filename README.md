@@ -33,6 +33,17 @@ Please refer to [Type Specification](#type-specification) and [Examples](#exampl
 
 The types have been defined so as to distinguish various statements of the kernel language, and also to allow converting between user input and storage form in Single Assignment Store.
 
+* **Stores** Types (Single Assignment, Trigger and Mutable)
+
+``` Haskell
+type MemoryToEqClassMap = Map.Map Memory Memory
+type EqClassToValueMap  = Map.Map Memory Value
+
+type SingleAssignmentStore = (MemoryToEqClassMap, EqClassToValueMap)
+type TriggerStore = Map.Map Memory [Value]
+type MutableStore = Map.Map Uuid.UUID Memory
+```
+
 * **Statement** Type (Set of valid statements which can be part of a program)
 
 ``` Haskell
@@ -48,14 +59,18 @@ data Statement = Skip
                                 fststmt :: Statement,
                                 sndstmt :: Statement}
                  | Match {src     :: Identifier,
-                          pattern :: ValueRead,
+                          pattern :: ValuesRead,
                           fststmt :: Statement,
                           sndstmt :: Statement}
                  | Apply {func       :: Identifier,
                           parameters :: [Identifier]}
                  | Thread {stmt :: Statement}
                  | ByNeed {dest :: Identifier,
-                           value :: ValuesRead} deriving (Eq, Show, Read)
+                           value :: ValuesRead}
+                 | NewPort {src  :: Identifier,
+                            dest :: Identifier}
+                 | Send {dest  :: Identifier,
+                         msg :: Identifier} deriving (Eq, Show, Read)
 ```
 
 * **StackState** Type (Ready, Suspended, Completed), for Concurreny
@@ -72,7 +87,8 @@ data Value = Liter {litVal :: Literal}
                         procStmt       :: Statement,
                         procEnv        :: EnvironmentMap}
              | Rec {recLabel  :: Literal,
-                    recValues :: FeatureMap} deriving (Show, Read)
+                    recValues :: FeatureMap}
+             | Name {name :: Uuid.UUID} deriving (Show, Read)
 ```
 `Value` type describes how values (data) is stored in the Single Assignment Store, the SAS can only contain data of types Literals (integers), Records or Closures (procedures).
 
@@ -210,6 +226,8 @@ The interpreter requires input in AST format. Here is a brief specification of h
 | {F X1 ... Xn} | [apply ident(f) ident(x1) ... ident(xn)] | Apply { func = "F", parameters = ["X1", ... , "Xn"] } |
 | thread \<s\> end | [Thread s] | Thread { stmt = `Statement` } |
 | ByNeed \<p\> \<x\> end | [ByNeed p x] | ByNeed { dest = "x", value = `ValuesRead` } |
+| NewPort \<x\> \<port\> end | [NewPort x port] | NewPort { src = "x", dest = "port" } |
+| Send \<port\> \<msg\> end | [Send port msg] | Send { dest = "port", msg = "msg" } |
 
 The Specification for each of the Records and Value types can be found in [Examples](#examples) section.
 
@@ -227,6 +245,7 @@ The Specification for each of the Records and Value types can be found in [Examp
 │   ├── ExecuteProgram.hs
 │   ├── Execution.hs
 │   ├── Helpers.hs
+│   ├── MutableStore.hs
 │   ├── SingleAssignmentStore.hs
 │   ├── TriggerStore.hs
 │   └── Types.hs
@@ -239,6 +258,7 @@ The Specification for each of the Records and Value types can be found in [Examp
 * `ExecuteProgram.hs`: Main program. Calls `threadScheduler` which picks a READY stack and calls `executeStack` which defines operations of the abstract machine depending on the type of statement.
 * `Execution.hs`: All the functions related to Threading, Context Switch and Execution Semantics of each statement and stack are defined here, they in turn call functions from different modules.
 * `Helpers.hs` : Set of helper functions to convert `ValuesRead` type to `Value` type or retrieve values from SAS or free variables from a procedure value and many more.
+* `MutableStore.hs`: This is the where Message Passing feature comes from, `NewPort` statement creates a port (association) in this store and `Send` statement is used to send data to this newly created port.
 * `SingleAssignmentStore.hs` : This is where the MAGIC happens, it implements the code for SAS and UNIFICATION Algorithm for literals, records and values.
 * `TriggerStore.hs`: This is the where Laziness feature comes from, `ByNeed` statement creates a trigger in this store and it is activated when the variable is really needed.
 * `Types.hs` : Defines all the types and typeclasses used in the project. Brief intro

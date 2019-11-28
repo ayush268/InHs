@@ -110,5 +110,6 @@ matchRecords _ _ = False
 
 instance Eq Value where
   (Liter x) == (Liter y) = x == y
+  (Name x)  == (Name y)  = x == y
   (Rec a b) == (Rec c d) = (matchRecords (Rec a b) (Rec c d))
   _ == _ = False
